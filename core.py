@@ -78,6 +78,38 @@ def make_dynamics(eps=1e-4):
     return dy, jdy, norm
 
 
+def make_dynamics_stm(eps=1e-4):
+    """Like make_dynamics but also returns a compiled Jacobian function.
+
+    The Jacobian function jjac(state, costate) returns the 14×14 matrix
+    A = ∂Ż/∂Z, where Z = [state (7), costate (7)].
+    Returns (dy, jdy, jjac, norm).
+    """
+    norm = build_normalization()
+    dy = TwoBodyCartesian(n_x=7)
+    dy.set_params(
+        mu=norm["mu"],
+        t_max=norm["t_max_norm"],
+        c=norm["c_norm"],
+        eps=eps,
+    )
+    odefunc = ca.Function(
+        "odefunc_sub",
+        [dy.states, dy.costates],
+        [dy.augmented_dot_sub],
+    )
+    jdy = jaxadi.convert(odefunc, compile=True)
+
+    jacfunc = ca.Function(
+        "jacfunc_sub",
+        [dy.states, dy.costates],
+        [dy.augmented_jac_sub],
+    )
+    jjac = jaxadi.convert(jacfunc, compile=True)
+
+    return dy, jdy, jjac, norm
+
+
 def build_rhs(jdy):
     def ode_rhs(t, augmented_state, _):
         del t
@@ -99,4 +131,56 @@ def build_reverse_rhs(jdy):
         state = augmented_state[:STATE_DIM]
         costate = augmented_state[STATE_DIM:STATE_DIM + COSTATE_DIM]
         return -jnp.asarray(jdy(state, costate), dtype=jnp.float32).reshape(-1)
+    return ode_rhs
+
+
+def build_rhs_stm(jdy, jjac):
+    """ODE RHS for joint (Z, Φ) integration.
+
+    State layout: [Z (AUGMENTED_DIM), vec(Φ) (AUGMENTED_DIM²)]
+    where Φ is the state transition matrix flattened row-major.
+
+    Equations:
+        dZ/dt  = f(Z)
+        dΦ/dt  = A(Z) @ Φ,   A = ∂f/∂Z  (AUGMENTED_DIM × AUGMENTED_DIM)
+
+    Initial conditions: Z(0) = z0, Φ(0) = I.
+    """
+    def ode_rhs(t, state_stm, _):
+        del t
+        state   = state_stm[:STATE_DIM]
+        costate = state_stm[STATE_DIM:AUGMENTED_DIM]
+        phi     = state_stm[AUGMENTED_DIM:].reshape(AUGMENTED_DIM, AUGMENTED_DIM)
+
+        z_dot = jnp.asarray(jdy(state, costate), dtype=jnp.float32).reshape(-1)
+        A     = jnp.asarray(jjac(state, costate), dtype=jnp.float32).reshape(AUGMENTED_DIM, AUGMENTED_DIM)
+        phi_dot = A @ phi
+
+        return jnp.concatenate([z_dot, phi_dot.reshape(-1)])
+    return ode_rhs
+
+
+def build_reverse_rhs_stm(jdy, jjac):
+    """Negated ODE for time-reversed (Z, Φ) integration.
+
+    Mirrors build_reverse_rhs but also propagates the STM.  Both the
+    trajectory and the STM equation are negated (substituting s = T - t):
+
+        dZ/ds  = -f(Z)
+        dΦ/ds  = -A(Z) @ Φ
+
+    Integrating from s=0 to s=T with Φ(0)=I recovers the forward STM
+    after reversing sol.ys.
+    """
+    def ode_rhs(t, state_stm, _):
+        del t
+        state   = state_stm[:STATE_DIM]
+        costate = state_stm[STATE_DIM:AUGMENTED_DIM]
+        phi     = state_stm[AUGMENTED_DIM:].reshape(AUGMENTED_DIM, AUGMENTED_DIM)
+
+        z_dot = -jnp.asarray(jdy(state, costate), dtype=jnp.float32).reshape(-1)
+        A     = jnp.asarray(jjac(state, costate), dtype=jnp.float32).reshape(AUGMENTED_DIM, AUGMENTED_DIM)
+        phi_dot = -(A @ phi)
+
+        return jnp.concatenate([z_dot, phi_dot.reshape(-1)])
     return ode_rhs

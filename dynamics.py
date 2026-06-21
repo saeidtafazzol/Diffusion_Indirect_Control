@@ -14,6 +14,7 @@ class DynamicsBase:
 
         self.states = ca.MX.sym('states', self.n_x)
         self.costates = ca.MX.sym('costates', self.n_x)
+        self.Z = ca.vertcat(self.states, self.costates)
         self.delta = ca.MX.sym('delta')
         self.alpha = ca.MX.sym('alpha', 3)
 
@@ -31,12 +32,14 @@ class DynamicsBase:
         self.state_dot_opt = None
         self.costate_dot_opt = None
         self.augmented_dot_opt = None
+        self.augmented_jac_opt = None  # ∂Ż/∂Z, shape (2n_x, 2n_x)
         self.hamiltonian_opt = None
 
         # Parameter-substituted expressions
         self.state_dot_sub = None
         self.costate_dot_sub = None
         self.augmented_dot_sub = None
+        self.augmented_jac_sub = None
         self.hamiltonian_sub = None
 
         self.params = {}
@@ -70,6 +73,7 @@ class DynamicsBase:
         self.state_dot_sub = self._substitute_params(self.state_dot_opt)
         self.costate_dot_sub = self._substitute_params(self.costate_dot_opt)
         self.augmented_dot_sub = self._substitute_params(self.augmented_dot_opt)
+        self.augmented_jac_sub = self._substitute_params(self.augmented_jac_opt)
         self.hamiltonian_sub = self._substitute_params(self.hamiltonian_opt)
 
     def _compile_function(self, func_name, expr, filename_base):
@@ -147,6 +151,7 @@ class TwoBodyCartesian(DynamicsBase):
             self.delta, optimal_delta,
         )
         self.augmented_dot_opt = ca.vertcat(self.state_dot_opt, self.costate_dot_opt)
+        self.augmented_jac_opt = ca.jacobian(self.augmented_dot_opt, self.Z)
 
     def configure_params(self, **param_values):
         params = super().configure_params(**param_values)
