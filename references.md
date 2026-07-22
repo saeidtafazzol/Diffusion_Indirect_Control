@@ -1,0 +1,8 @@
+1. Chi, C., Xu, Z., Feng, S., Cousineau, E., Du, Y., Burchfiel, B., Tedrake, R. and Song, S., 2025. Diffusion policy: Visuomotor policy learning via action diffusion. The International Journal of Robotics Research, 44(10-11), pp.1684-1704.
+2. Li, A., Ding, Z., Dieng, A.B. and Beeson, R., 2024. Diffusolve: Diffusion-based solver for non-convex trajectory optimization. arXiv preprint arXiv:2403.05571.
+3. Li, A., Ding, Z., Dieng, A.B. and Beeson, R., 2024. Efficient and guaranteed-safe non-convex trajectory optimization with constrained diffusion model. arXiv preprint arXiv:2403.05571, 316.
+4. Li, A., Ding, Z., Dieng, A.B. and Beeson, R., 2024, November. Constraint-aware diffusion models for trajectory optimization. In International Conference on Dynamic Data Driven Applications Systems (pp. 308-316). Cham: Springer Nature Switzerland.
+5. Beeson, R., Li, A. and Sinha, A., 2024. Global search of optimal spacecraft trajectories using amortization and deep generative models. arXiv preprint arXiv:2412.20023.
+6. Graebner, J. and Beeson, R., 2025. Global search for optimal low thrust spacecraft trajectories using diffusion models and the indirect method. The Journal of the Astronautical Sciences, 72(6), p.62.
+7. Kurtz, V. and Burdick, J.W., 2025, July. Equality constrained diffusion for direct trajectory optimization. In 2025 American Control Conference (ACC) (pp. 535-540). IEEE.
+8. Pan, C., Yi, Z., Shi, G. and Qu, G., 2024. Model-based diffusion for trajectory optimization. Advances in Neural Information Processing Systems, 37, pp.57914-57943.

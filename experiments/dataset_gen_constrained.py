@@ -16,6 +16,13 @@ Fixed variables (never modified):
     yf[6]           — terminal mass
     costate_f[6]    — lambda_m_final = 0  (Pontryagin transversality condition)
 """
+import sys
+from pathlib import Path
+_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_root / "src"))
+sys.path.insert(1, str(_root / "experiments"))
+del _root
+
 
 import argparse
 from pathlib import Path

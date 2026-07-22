@@ -205,3 +205,40 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ── Project-specific ─────────────────────────────────────────────────────────
+
+# Model checkpoints (large binary files)
+checkpoints/
+*.msgpack
+
+# Training datasets
+earth_mars_minfuel_constrained_32pts/
+data/
+
+# CasADi compiled C extensions (temp/)
+temp/
+
+# Experiment outputs
+convergence_study/
+convergence_study_500/
+convergence_study_*/
+time_shift_convergence_study/
+time_shift_convergence_study_*/
+shift_videos/
+trajectory_eps/
+
+# Generated media / archives
+*.mp4
+*.zip
+
+# Result text files
+convergence_results_*.txt
+
+# Logs
+*.log
+
+# Generated EPS/PNG figures (keep .gitignore itself, not individual plots)
+# (trajectory_eps/ is already above; catch any stray plots at root too)
+*.eps
+

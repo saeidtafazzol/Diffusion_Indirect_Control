@@ -12,6 +12,13 @@ Acceptance criterion is still lambda_m(t=0) <= tau only (pos/vel are soft steeri
 Free variables:  yf[3:6]  (terminal velocity) + costate_f[0:6]  (rv-costates)
 Fixed variables: yf[0:3]  (terminal position),  yf[6] (mass),    costate_f[6]=0
 """
+import sys
+from pathlib import Path
+_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_root / "src"))
+sys.path.insert(1, str(_root / "experiments"))
+del _root
+
 
 import argparse
 from pathlib import Path
