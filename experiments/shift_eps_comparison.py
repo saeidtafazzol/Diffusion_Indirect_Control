@@ -506,7 +506,8 @@ def write_shift_detail_txt(shift, trial_log, num_trials, out_dir, res_tol=1e-8):
         stage_logs = [r[4] for r in trial_log]
         eps_list = [e for e, _, _ in stage_logs[0]]
         for si, eps in enumerate(eps_list):
-            cnt = sum(1 for sl in stage_logs if "Succeed" in sl[si][1] or "Acceptable" in sl[si][1])
+            cnt = sum(1 for sl in stage_logs
+                      if si < len(sl) and ("Succeed" in sl[si][1] or "Acceptable" in sl[si][1]))
             lines.append(f"  eps={eps:.0e}:  {cnt}/{n}")
 
     with open(fpath, "w") as fp:
