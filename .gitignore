@@ -227,6 +227,9 @@ time_shift_convergence_study/
 time_shift_convergence_study_*/
 shift_videos/
 trajectory_eps/
+shift_eps_study/
+shift_eps_study_*/
+orbit_plots/
 
 # Generated media / archives
 *.mp4

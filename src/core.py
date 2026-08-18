@@ -60,7 +60,7 @@ def build_normalization():
     }
 
 
-def make_dynamics(eps=1e-4):
+def make_dynamics(eps=1e-4, compile_jax=True):
     norm = build_normalization()
     dy = TwoBodyCartesian(n_x=7)
     dy.set_params(
@@ -69,12 +69,15 @@ def make_dynamics(eps=1e-4):
         c=norm["c_norm"],
         eps=eps,
     )
-    odefunc = ca.Function(
-        "odefunc_sub",
-        [dy.states, dy.costates],
-        [dy.augmented_dot_sub],
-    )
-    jdy = jaxadi.convert(odefunc, compile=True)
+    if compile_jax:
+        odefunc = ca.Function(
+            "odefunc_sub",
+            [dy.states, dy.costates],
+            [dy.augmented_dot_sub],
+        )
+        jdy = jaxadi.convert(odefunc, compile=True)
+    else:
+        jdy = None
     return dy, jdy, norm
 
 

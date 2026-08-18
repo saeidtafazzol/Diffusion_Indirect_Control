@@ -314,7 +314,7 @@ class BVPRefiner:
         self._n_g        = 0   # no NLP constraints; BCs are variable bounds
         self._ipopt_verb = ipopt_verbosity
 
-        self.dy, _, self.norm = make_dynamics(eps=eps)
+        self.dy, _, self.norm = make_dynamics(eps=eps, compile_jax=False)
         self._prob, self.dts, self.time_grid = _build_nlp_problem(
             self.dy,
             float(self.norm["t_f"]),
@@ -326,12 +326,12 @@ class BVPRefiner:
 
     # ── Internal solver factory ───────────────────────────────────────────────
 
-    def _make_solver(self, max_iter: int, cb) -> ca.Function:
+    def _make_solver(self, max_iter: int, cb, extra_opts: dict = None) -> ca.Function:
         opts = {
             "ipopt.print_level"           : self._ipopt_verb,
             "print_time"                  : 0,
-            "ipopt.tol"                   : 1e-7,
-            "ipopt.constr_viol_tol"       : 1e-7,
+            "ipopt.tol"                   : 1e-10,
+            "ipopt.constr_viol_tol"       : 1e-10,
             "ipopt.max_iter"              : max_iter,
             "ipopt.warm_start_init_point" : "yes",
             "ipopt.mu_init"               : 0.1,
@@ -339,6 +339,8 @@ class BVPRefiner:
         if cb is not None:
             opts["iteration_callback"]      = cb
             opts["iteration_callback_step"] = 1
+        if extra_opts:
+            opts.update(extra_opts)
         return ca.nlpsol("bvp_nlp", "ipopt", self._prob, opts)
 
     # ── Convenience: continuity residuals ─────────────────────────────────────
@@ -348,10 +350,40 @@ class BVPRefiner:
         z: np.ndarray,
         n_rk4_eval: int = 16,
     ) -> np.ndarray:
-        """Per-interval ‖F(Z_k) − Z_{k+1}‖₂.  Returns (T-1,) float64."""
-        return continuity_residuals(
-            z, self.dy, self.norm, self.n_points, n_rk4_eval
-        )
+        """Per-interval ‖F(Z_k) − Z_{k+1}‖₂.  Returns (T-1,) float64.
+
+        Caches the CasADi evaluation function so repeated calls are fast.
+        """
+        if not hasattr(self, "_f_diag_cached"):
+            self._f_diag_cached = ca.Function(
+                "f_diag_c",
+                [self.dy.states, self.dy.costates],
+                [self.dy.augmented_dot_sub],
+            )
+        T   = self.n_points
+        t_f = float(self.norm["t_f"])
+        dts = np.diff(np.linspace(0.0, t_f, T))
+        fn  = self._f_diag_cached
+
+        def _f(Z):
+            return np.asarray(fn(Z[:7], Z[7:])).flatten()
+
+        def _rk4(Z, h):
+            k1 = _f(Z);       k2 = _f(Z + 0.5*h*k1)
+            k3 = _f(Z + 0.5*h*k2); k4 = _f(Z + h*k3)
+            return Z + (h / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+
+        def _integrate(Z0, dt):
+            h = dt / n_rk4_eval
+            Z = Z0.astype(np.float64).copy()
+            for _ in range(n_rk4_eval):
+                Z = _rk4(Z, h)
+            return Z
+
+        residuals = np.empty(T - 1, dtype=np.float64)
+        for k in range(T - 1):
+            residuals[k] = np.linalg.norm(_integrate(z[k], dts[k]) - z[k + 1])
+        return residuals
 
     # ── One-shot full solve ───────────────────────────────────────────────────
 
