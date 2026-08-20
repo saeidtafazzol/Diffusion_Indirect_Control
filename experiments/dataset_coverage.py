@@ -113,12 +113,13 @@ colors = [
     colorsys.hsv_to_rgb(0.667 + i / (n_sh - 1) * 0.333, 1.0, 1.0)
     for i in range(n_sh)
 ]
+MARKERS = ["x", "o", "^"]
 
 legend_handles = [
     plt.Line2D([0], [0], marker="o", color="#555555",
                markersize=4, linewidth=0, alpha=0.8, label="Dataset"),
 ] + [
-    plt.Line2D([0], [0], marker="x", color=colors[i], markersize=5,
+    plt.Line2D([0], [0], marker=MARKERS[i % 3], color=colors[i], markersize=5,
                linewidth=0, markeredgewidth=1.2, label=f"{s:+d}d")
     for i, s in enumerate(DEFAULT_SHIFTS)
 ]
@@ -131,9 +132,10 @@ for emb, tag, xlabel, ylabel in [
     ds_pts = emb[:n_ds]
     sh_pts = emb[n_ds:]
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    # crosses first, then dots on top so overlap is visible
+    # shift markers first, then dots on top so overlap is visible
     for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
-        ax.scatter(pt[0], pt[1], marker="x", s=40, linewidths=1.5,
+        m = MARKERS[i % 3]
+        ax.scatter(pt[0], pt[1], marker=m, s=40, linewidths=1.5,
                    color=colors[i], zorder=4)
     ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
                s=3, alpha=0.55, color="#444444", linewidths=0, zorder=5)
