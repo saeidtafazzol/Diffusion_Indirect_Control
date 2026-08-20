@@ -231,6 +231,7 @@ trajectory_eps/
 shift_eps_study/
 shift_eps_study_*/
 orbit_plots/
+tsne_plots/
 
 # Generated media / archives
 *.mp4

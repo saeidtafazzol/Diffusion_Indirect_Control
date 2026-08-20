@@ -29,9 +29,10 @@ from core import build_normalization
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DATASET_DIR = _root / "earth_mars_minfuel_posvel_constrained_32pts"
-N_TSNE      = 8000        # dataset points fed to t-SNE (random subset)
-RANDOM_SEED = 42
-PERPLEXITY  = 40
+N_TSNE           = 8000   # dataset points fed to t-SNE (random subset)
+RANDOM_SEED      = 42
+PERPLEXITY       = 40
+EARLY_EXAGGERATION = 24   # >12 pushes clusters further apart
 
 DEFAULT_SHIFTS = [
     -700, -600, -500, -400, -300, -200, -100, -50,
@@ -92,6 +93,7 @@ print("Running t-SNE on initial states (7D) …")
 n_ds = len(init_sub)
 combined_init = np.vstack([init_sub, shift_init])         # (N+17, 7)
 emb_init = TSNE(n_components=2, perplexity=PERPLEXITY,
+                early_exaggeration=EARLY_EXAGGERATION,
                 random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined_init)
 ds_init    = emb_init[:n_ds]
 shift_emb_init = emb_init[n_ds:]
@@ -100,49 +102,51 @@ shift_emb_init = emb_init[n_ds:]
 print("Running t-SNE on final states (6D) …")
 combined_final = np.vstack([final_sub, shift_final])      # (N+17, 6)
 emb_final = TSNE(n_components=2, perplexity=PERPLEXITY,
+                 early_exaggeration=EARLY_EXAGGERATION,
                  random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined_final)
 ds_final       = emb_final[:n_ds]
 shift_emb_final = emb_final[n_ds:]
 
-# ── Plot ──────────────────────────────────────────────────────────────────────
-fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
-fig.suptitle(
-    f"t-SNE coverage  |  dataset: {N_total:,} trajectories  "
-    f"(subset {N_TSNE:,})  vs  17 shift experiments",
-    fontsize=10,
-)
+# ── Plot helpers ──────────────────────────────────────────────────────────────
+out_dir = _root / "tsne_plots"
+out_dir.mkdir(exist_ok=True)
 
 cmap   = cm.coolwarm
 colors = [cmap(i / (len(DEFAULT_SHIFTS) - 1)) for i in range(len(DEFAULT_SHIFTS))]
 
-for ax, ds_pts, sh_pts, title in [
-    (axes[0], ds_init,  shift_emb_init,  "Initial states  (r, v, m)  7D → 2D"),
-    (axes[1], ds_final, shift_emb_final, "Final states  (r, v)  6D → 2D"),
-]:
-    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
-               s=2, alpha=0.25, color="#888888", linewidths=0, label="Dataset")
-    for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
-        ax.scatter(pt[0], pt[1], marker="x", s=60, linewidths=1.5,
-                   color=colors[i], zorder=5,
-                   label=f"{shift:+d}d" if i == 0 else f"{shift:+d}d")
-    ax.set_title(title, fontsize=9)
-    ax.set_xticks([]); ax.set_yticks([])
-    ax.set_xlabel("t-SNE 1", fontsize=8); ax.set_ylabel("t-SNE 2", fontsize=8)
-
-# Single legend for shift crosses (right panel)
-handles = [
-    plt.Line2D([0], [0], marker="x", color=colors[i], markersize=6,
-               linewidth=0, markeredgewidth=1.5, label=f"{s:+d}d")
+legend_handles = [
+    plt.Line2D([0], [0], marker="o", color="#888888",
+               markersize=4, linewidth=0, alpha=0.5, label="Dataset"),
+] + [
+    plt.Line2D([0], [0], marker="x", color=colors[i], markersize=5,
+               linewidth=0, markeredgewidth=1.2, label=f"{s:+d}d")
     for i, s in enumerate(DEFAULT_SHIFTS)
 ]
-handles.insert(0, plt.Line2D([0], [0], marker="o", color="#888888",
-                              markersize=4, linewidth=0, alpha=0.5, label="Dataset"))
-axes[1].legend(handles=handles, fontsize=6.5, ncol=2,
-               loc="lower right", framealpha=0.8, title="Shift", title_fontsize=7)
 
-fig.tight_layout()
-out = Path(__file__).parent / "tsne_coverage.png"
-fig.savefig(str(out), dpi=140, bbox_inches="tight")
-plt.close(fig)
-print(f"Saved → {out}")
+panels = [
+    (ds_init,  shift_emb_init,  "initial",
+     "Initial states  (r, v, m)  —  7D → 2D t-SNE"),
+    (ds_final, shift_emb_final, "final",
+     "Final states  (r, v)  —  6D → 2D t-SNE"),
+]
+
+for ds_pts, sh_pts, tag, title in panels:
+    fig, ax = plt.subplots(figsize=(6.5, 5.5))
+    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
+               s=2, alpha=0.25, color="#888888", linewidths=0)
+    for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
+        ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
+                   color=colors[i], zorder=5)
+    ax.set_title(title, fontsize=10)
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.set_xlabel("t-SNE 1", fontsize=8); ax.set_ylabel("t-SNE 2", fontsize=8)
+    ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
+              loc="lower right", framealpha=0.85, title="Shift", title_fontsize=7)
+    fig.tight_layout()
+    for ext in ("png", "eps"):
+        p = out_dir / f"tsne_{tag}.{ext}"
+        fig.savefig(str(p), dpi=140, bbox_inches="tight")
+        print(f"Saved → {p}")
+    plt.close(fig)
+
 print(f"\nDataset size: {N_total:,} trajectories  ({len(chunks)} chunks × {N_total//len(chunks):,})")
