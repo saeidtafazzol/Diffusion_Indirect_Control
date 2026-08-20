@@ -787,6 +787,8 @@ def parse_args():
     p.add_argument("--casadi-max-iter-b",   type=int,   default=240,
                    help="IPOPT max iters per stage for Method B (5 stages)")
     p.add_argument("--res-tol",             type=float, default=1e-8)
+    p.add_argument("--seed-offset",         type=int,   default=0,
+                   help="Start seeds at this value (use to continue after a previous run)")
     p.add_argument("--output-dir",          type=Path,  default=Path("shift_eps_study"))
     return p.parse_args()
 
@@ -834,7 +836,7 @@ def main():
     shifts   = args.shifts_days
     N_shifts = len(shifts)
     N_trials = args.num_trials
-    seeds    = list(range(N_trials))
+    seeds    = list(range(args.seed_offset, args.seed_offset + N_trials))
 
     print("\n" + "=" * 72)
     print(f"  {N_shifts} shifts × {N_trials} trials/shift × 2 methods")
