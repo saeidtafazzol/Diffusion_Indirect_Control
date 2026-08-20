@@ -88,26 +88,20 @@ for s in DEFAULT_SHIFTS:
 shift_init  = np.array(shift_init,  dtype=np.float32)    # (17, 7)
 shift_final = np.array(shift_final, dtype=np.float32)    # (17, 6)
 
-# ── t-SNE: initial (7D) ───────────────────────────────────────────────────────
-print("Running t-SNE on initial states (7D) …")
-n_ds = len(init_sub)
-combined_init = np.vstack([init_sub, shift_init])         # (N+17, 7)
-emb_init = TSNE(n_components=2, perplexity=PERPLEXITY,
-                early_exaggeration=EARLY_EXAGGERATION,
-                random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined_init)
-ds_init    = emb_init[:n_ds]
-shift_emb_init = emb_init[n_ds:]
+# ── Combine into 13D and run single t-SNE ────────────────────────────────────
+ds_13      = np.hstack([init_sub,   final_sub])    # (N_TSNE, 13)
+shift_13   = np.hstack([shift_init, shift_final])  # (17, 13)
+combined   = np.vstack([ds_13, shift_13])          # (N_TSNE+17, 13)
 
-# ── t-SNE: final (6D) ────────────────────────────────────────────────────────
-print("Running t-SNE on final states (6D) …")
-combined_final = np.vstack([final_sub, shift_final])      # (N+17, 6)
-emb_final = TSNE(n_components=2, perplexity=PERPLEXITY,
-                 early_exaggeration=EARLY_EXAGGERATION,
-                 random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined_final)
-ds_final       = emb_final[:n_ds]
-shift_emb_final = emb_final[n_ds:]
+print("Running t-SNE on combined (r0,v0,m0,rf,vf) — 13D …")
+emb = TSNE(n_components=2, perplexity=PERPLEXITY,
+           early_exaggeration=EARLY_EXAGGERATION,
+           random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined)
 
-# ── Plot helpers ──────────────────────────────────────────────────────────────
+ds_pts  = emb[:len(ds_13)]
+sh_pts  = emb[len(ds_13):]
+
+# ── Plot ──────────────────────────────────────────────────────────────────────
 out_dir = _root / "tsne_plots"
 out_dir.mkdir(exist_ok=True)
 
@@ -123,30 +117,22 @@ legend_handles = [
     for i, s in enumerate(DEFAULT_SHIFTS)
 ]
 
-panels = [
-    (ds_init,  shift_emb_init,  "initial",
-     "Initial states  (r, v, m)  —  7D → 2D t-SNE"),
-    (ds_final, shift_emb_final, "final",
-     "Final states  (r, v)  —  6D → 2D t-SNE"),
-]
-
-for ds_pts, sh_pts, tag, title in panels:
-    fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
-               s=2, alpha=0.25, color="#888888", linewidths=0)
-    for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
-        ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
-                   color=colors[i], zorder=5)
-    ax.set_title(title, fontsize=10)
-    ax.set_xticks([]); ax.set_yticks([])
-    ax.set_xlabel("t-SNE 1", fontsize=8); ax.set_ylabel("t-SNE 2", fontsize=8)
-    ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
-              loc="lower right", framealpha=0.85, title="Shift", title_fontsize=7)
-    fig.tight_layout()
-    for ext in ("png", "eps"):
-        p = out_dir / f"tsne_{tag}.{ext}"
-        fig.savefig(str(p), dpi=140, bbox_inches="tight")
-        print(f"Saved → {p}")
-    plt.close(fig)
+fig, ax = plt.subplots(figsize=(6.5, 5.5))
+ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
+           s=2, alpha=0.25, color="#888888", linewidths=0)
+for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
+    ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
+               color=colors[i], zorder=5)
+ax.set_title("t-SNE  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D", fontsize=10)
+ax.set_xticks([]); ax.set_yticks([])
+ax.set_xlabel("t-SNE 1", fontsize=8); ax.set_ylabel("t-SNE 2", fontsize=8)
+ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
+          loc="lower right", framealpha=0.85, title="Shift", title_fontsize=7)
+fig.tight_layout()
+for ext in ("png", "eps"):
+    p = out_dir / f"tsne_coverage.{ext}"
+    fig.savefig(str(p), dpi=140, bbox_inches="tight")
+    print(f"Saved → {p}")
+plt.close(fig)
 
 print(f"\nDataset size: {N_total:,} trajectories  ({len(chunks)} chunks × {N_total//len(chunks):,})")
