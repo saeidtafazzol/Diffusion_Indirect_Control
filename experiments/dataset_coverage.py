@@ -124,11 +124,9 @@ legend_handles = [
 ]
 
 n_ds = len(ds_13)
-for emb, tag, xlabel, ylabel, title in [
-    (emb_mds,  "mds",  "MDS 1",    "MDS 2",
-     "MDS  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D  (metric, Euclidean)"),
-    (emb_tsne, "tsne", "t-SNE 1",  "t-SNE 2",
-     "t-SNE  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D"),
+for emb, tag, xlabel, ylabel in [
+    (emb_mds,  "mds",  r"MDS $d_1$",   r"MDS $d_2$"),
+    (emb_tsne, "tsne", r"t-SNE $d_1$", r"t-SNE $d_2$"),
 ]:
     ds_pts = emb[:n_ds]
     sh_pts = emb[n_ds:]
@@ -139,7 +137,6 @@ for emb, tag, xlabel, ylabel, title in [
                    color=colors[i], zorder=4)
     ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
                s=3, alpha=0.55, color="#444444", linewidths=0, zorder=5)
-    ax.set_title(title, fontsize=10)
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlabel(xlabel, fontsize=8); ax.set_ylabel(ylabel, fontsize=8)
     ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
