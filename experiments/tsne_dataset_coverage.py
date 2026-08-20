@@ -103,15 +103,20 @@ emb_tsne = TSNE(n_components=2, perplexity=PERPLEXITY,
                 random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined)
 
 # ── Plot helpers ──────────────────────────────────────────────────────────────
+import colorsys
+
 out_dir = _root / "tsne_plots"
 out_dir.mkdir(exist_ok=True)
 
-cmap   = cm.coolwarm
-colors = [cmap(i / (len(DEFAULT_SHIFTS) - 1)) for i in range(len(DEFAULT_SHIFTS))]
+n_sh = len(DEFAULT_SHIFTS)
+colors = [
+    colorsys.hsv_to_rgb(i / n_sh, 1.0, 1.0)
+    for i in range(n_sh)
+]
 
 legend_handles = [
-    plt.Line2D([0], [0], marker="o", color="#888888",
-               markersize=4, linewidth=0, alpha=0.5, label="Dataset"),
+    plt.Line2D([0], [0], marker="o", color="#555555",
+               markersize=4, linewidth=0, alpha=0.8, label="Dataset"),
 ] + [
     plt.Line2D([0], [0], marker="x", color=colors[i], markersize=5,
                linewidth=0, markeredgewidth=1.2, label=f"{s:+d}d")
@@ -128,11 +133,12 @@ for emb, tag, xlabel, ylabel, title in [
     ds_pts = emb[:n_ds]
     sh_pts = emb[n_ds:]
     fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
-               s=2, alpha=0.25, color="#888888", linewidths=0)
+    # crosses first, then dots on top so overlap is visible
     for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
-        ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
-                   color=colors[i], zorder=5)
+        ax.scatter(pt[0], pt[1], marker="x", s=40, linewidths=1.5,
+                   color=colors[i], zorder=4)
+    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
+               s=3, alpha=0.55, color="#444444", linewidths=0, zorder=5)
     ax.set_title(title, fontsize=10)
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xlabel(xlabel, fontsize=8); ax.set_ylabel(ylabel, fontsize=8)
