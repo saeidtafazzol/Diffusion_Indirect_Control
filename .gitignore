@@ -214,6 +214,7 @@ checkpoints/
 
 # Training datasets
 earth_mars_minfuel_constrained_32pts/
+earth_mars_minfuel_posvel_constrained_32pts/
 data/
 
 # CasADi compiled C extensions (temp/)
