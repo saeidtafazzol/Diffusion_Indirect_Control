@@ -110,7 +110,7 @@ out_dir.mkdir(exist_ok=True)
 
 n_sh = len(DEFAULT_SHIFTS)
 colors = [
-    colorsys.hsv_to_rgb(i / (n_sh - 1) * 0.667, 1.0, 1.0)
+    colorsys.hsv_to_rgb(0.667 + i / (n_sh - 1) * 0.333, 1.0, 1.0)
     for i in range(n_sh)
 ]
 
