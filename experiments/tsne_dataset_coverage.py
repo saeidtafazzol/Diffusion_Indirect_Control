@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from sklearn.manifold import TSNE
+from sklearn.manifold import MDS, TSNE
 
 _root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_root / "src"))
@@ -29,10 +29,10 @@ from core import build_normalization
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DATASET_DIR = _root / "earth_mars_minfuel_posvel_constrained_32pts"
-N_TSNE           = 8000   # dataset points fed to t-SNE (random subset)
-RANDOM_SEED      = 42
-PERPLEXITY       = 40
-EARLY_EXAGGERATION = 24   # >12 pushes clusters further apart
+N_SUBSET    = 8000   # dataset points fed to each method (random subset)
+RANDOM_SEED = 42
+PERPLEXITY  = 40
+EARLY_EXAGGERATION = 24
 
 DEFAULT_SHIFTS = [
     -700, -600, -500, -400, -300, -200, -100, -50,
@@ -55,9 +55,9 @@ N_total   = len(init_all)
 print(f"Total trajectories: {N_total:,}")
 
 rng = np.random.default_rng(RANDOM_SEED)
-idx = rng.choice(N_total, size=min(N_TSNE, N_total), replace=False)
-init_sub  = init_all[idx]          # (N_TSNE, 7)
-final_sub = final_all[idx, :6]     # (N_TSNE, 6) — drop mass
+idx = rng.choice(N_total, size=min(N_SUBSET, N_total), replace=False)
+init_sub  = init_all[idx]          # (N_SUBSET, 7)
+final_sub = final_all[idx, :6]     # (N_SUBSET, 6) — drop mass
 
 # ── Shift experiment boundary conditions ─────────────────────────────────────
 norm = build_normalization()
@@ -93,15 +93,16 @@ ds_13      = np.hstack([init_sub,   final_sub])    # (N_TSNE, 13)
 shift_13   = np.hstack([shift_init, shift_final])  # (17, 13)
 combined   = np.vstack([ds_13, shift_13])          # (N_TSNE+17, 13)
 
+print("Running MDS on combined (r0,v0,m0,rf,vf) — 13D …")
+emb_mds = MDS(n_components=2, metric=True, normalized_stress=False,
+              random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined)
+
 print("Running t-SNE on combined (r0,v0,m0,rf,vf) — 13D …")
-emb = TSNE(n_components=2, perplexity=PERPLEXITY,
-           early_exaggeration=EARLY_EXAGGERATION,
-           random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined)
+emb_tsne = TSNE(n_components=2, perplexity=PERPLEXITY,
+                early_exaggeration=EARLY_EXAGGERATION,
+                random_state=RANDOM_SEED, n_jobs=-1).fit_transform(combined)
 
-ds_pts  = emb[:len(ds_13)]
-sh_pts  = emb[len(ds_13):]
-
-# ── Plot ──────────────────────────────────────────────────────────────────────
+# ── Plot helpers ──────────────────────────────────────────────────────────────
 out_dir = _root / "tsne_plots"
 out_dir.mkdir(exist_ok=True)
 
@@ -117,22 +118,31 @@ legend_handles = [
     for i, s in enumerate(DEFAULT_SHIFTS)
 ]
 
-fig, ax = plt.subplots(figsize=(6.5, 5.5))
-ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
-           s=2, alpha=0.25, color="#888888", linewidths=0)
-for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
-    ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
-               color=colors[i], zorder=5)
-ax.set_title("t-SNE  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D", fontsize=10)
-ax.set_xticks([]); ax.set_yticks([])
-ax.set_xlabel("t-SNE 1", fontsize=8); ax.set_ylabel("t-SNE 2", fontsize=8)
-ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
-          loc="lower right", framealpha=0.85, title="Shift", title_fontsize=7)
-fig.tight_layout()
-for ext in ("png", "eps"):
-    p = out_dir / f"tsne_coverage.{ext}"
-    fig.savefig(str(p), dpi=140, bbox_inches="tight")
-    print(f"Saved → {p}")
-plt.close(fig)
+n_ds = len(ds_13)
+for emb, tag, xlabel, ylabel, title in [
+    (emb_mds,  "mds",  "MDS 1",    "MDS 2",
+     "MDS  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D  (metric, Euclidean)"),
+    (emb_tsne, "tsne", "t-SNE 1",  "t-SNE 2",
+     "t-SNE  (r₀, v₀, m₀, r_f, v_f)  —  13D → 2D"),
+]:
+    ds_pts = emb[:n_ds]
+    sh_pts = emb[n_ds:]
+    fig, ax = plt.subplots(figsize=(6.5, 5.5))
+    ax.scatter(ds_pts[:, 0], ds_pts[:, 1],
+               s=2, alpha=0.25, color="#888888", linewidths=0)
+    for i, (pt, shift) in enumerate(zip(sh_pts, DEFAULT_SHIFTS)):
+        ax.scatter(pt[0], pt[1], marker="x", s=28, linewidths=1.2,
+                   color=colors[i], zorder=5)
+    ax.set_title(title, fontsize=10)
+    ax.set_xticks([]); ax.set_yticks([])
+    ax.set_xlabel(xlabel, fontsize=8); ax.set_ylabel(ylabel, fontsize=8)
+    ax.legend(handles=legend_handles, fontsize=6.5, ncol=2,
+              loc="lower right", framealpha=0.85, title="Shift", title_fontsize=7)
+    fig.tight_layout()
+    for ext in ("png", "eps"):
+        p = out_dir / f"{tag}_coverage.{ext}"
+        fig.savefig(str(p), dpi=140, bbox_inches="tight")
+        print(f"Saved → {p}")
+    plt.close(fig)
 
 print(f"\nDataset size: {N_total:,} trajectories  ({len(chunks)} chunks × {N_total//len(chunks):,})")
