@@ -57,9 +57,9 @@ Y_LO, Y_HI = y_mid - xy_half, y_mid + xy_half
 Z_LO, Z_HI = -0.1, 0.1
 
 TARGETS = [
-    ("-300 d", "shift_-300d", "00"),
-    ("+100 d", "shift_+100d", "00"),
-    ("+500 d", "shift_+500d", "09"),
+    ("-300 days", "shift_-300d", "00"),
+    ("+100 days", "shift_+100d", "00"),
+    ("+500 days", "shift_+500d", "09"),
 ]
 
 C_EARTH = "#93C572"
@@ -70,9 +70,9 @@ C_SUN   = "#F5C518"
 
 STUDY_DIR = Path("shift_eps_study")
 
-ELEV, AZIM = 22, 225
+ELEV, AZIM = 14, 225
 
-fig = plt.figure(figsize=(5.5, 13))
+fig = plt.figure(figsize=(5.5, 11))
 
 for row, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
     json_path = STUDY_DIR / shift_dir / f"trial_{trial_id}" / "trial_data.json"
@@ -108,9 +108,9 @@ for row, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
     ax.set_ylim(Y_LO, Y_HI)
     ax.set_zlim(Z_LO, Z_HI)
 
-    # Box aspect: Z range is 0.2 AU, XY range is 2*xy_half AU; exaggerate Z ×5
+    # True scale: Z visual size proportional to actual AU range
     xy_span = 2 * xy_half
-    ax.set_box_aspect([1, 1, 5 * (Z_HI - Z_LO) / xy_span])
+    ax.set_box_aspect([1, 1, (Z_HI - Z_LO) / xy_span])
 
     ax.xaxis.pane.fill = False
     ax.yaxis.pane.fill = False
@@ -139,13 +139,16 @@ for row, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
         ax.set_yticklabels([])
     ax.set_zlabel("Z (AU)", fontsize=8, labelpad=5)
 
-    ax.set_title(f"shift = {shift_label}", fontsize=9, pad=4)
+    # Label inside the plot, sitting just above the XY plane level
+    ax.text2D(0.04, 0.10, f"shift: {shift_label}",
+              transform=ax.transAxes, fontsize=9, ha="left", va="bottom",
+              color="#222222")
 
     if row == 0:
         ax.legend(fontsize=7.5, loc="upper left", framealpha=0.85,
                   edgecolor="#aaaaaa", ncol=1)
 
-fig.subplots_adjust(hspace=-0.05)
+fig.subplots_adjust(hspace=-0.35)
 
 out_dir = Path("orbit_plots")
 out_dir.mkdir(exist_ok=True)
