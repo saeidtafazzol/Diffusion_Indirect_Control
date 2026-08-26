@@ -51,10 +51,13 @@ xy_half  = 0.58 * max(all_orb[:, 0].max() - all_orb[:, 0].min(),
 X_LO, X_HI = x_mid - xy_half, x_mid + xy_half
 Y_LO, Y_HI = y_mid - xy_half, y_mid + xy_half
 DZ     = 0.10    # half-width of each Z band (band spans ±0.1 AU)
-Z_STEP = 0.55    # floor-to-floor offset — larger = more breathing room
+Z_STEP = 1.30    # floor-to-floor offset — larger = more breathing room
+
+LBL_DX = [0.05, 0.05, 0.05]  # x offset: push all labels right of centre
+LBL_DY = [-0.1, -0.1, -0.1]  # y offset: push all labels toward viewer
 
 TARGETS = [
-    ("-300 days", "shift_-300d", "00"),
+    ("−300 days", "shift_-300d", "00"),
     ("+100 days", "shift_+100d", "00"),
     ("+500 days", "shift_+500d", "09"),
 ]
@@ -67,7 +70,7 @@ C_DIFF  = "#0F52BA"; C_IPOPT = "#8B008B"; C_SUN = "#F5C518"
 
 STUDY_DIR = Path("shift_eps_study")
 
-fig = plt.figure(figsize=(6, 5))
+fig = plt.figure(figsize=(8, 6))
 ax  = fig.add_subplot(111, projection="3d")
 ax.view_init(elev=20, azim=225)
 
@@ -101,10 +104,10 @@ for level, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
     ax.scatter(i_st[0], i_st[1], i_st[2] + z_off, color=C_EARTH, s=20, zorder=7)
     ax.scatter(f_st[0], f_st[1], f_st[2] + z_off, color=C_MARS,  s=20, zorder=7)
 
-    # Label at the right side of each floor level, clear of the orbits
-    ax.text(X_HI + 0.05, y_mid, z_off,
-            f"shift: {shift_label}",
-            fontsize=8.5, ha="left", va="center",
+    # Label at XY origin of each floor level ("+500 days" offset to avoid collision)
+    ax.text(LBL_DX[level], LBL_DY[level], z_off,
+            shift_label,
+            fontsize=9, ha="center", va="center",
             color="#111111", fontweight="bold")
 
 ax.set_xlim(X_LO, X_HI)
@@ -125,26 +128,25 @@ ax.grid(False)
 xy_ticks = np.round(np.linspace(X_LO, X_HI, 5), 1)
 ax.xaxis.set_ticks(xy_ticks)
 ax.yaxis.set_ticks(xy_ticks)
-# Z ticks relative to each floor (0, 0.35, 0.70) showing ±0.1 per band
-z_ticks = [z - DZ for z in [0, Z_STEP, 2*Z_STEP]] + \
-          [z       for z in [0, Z_STEP, 2*Z_STEP]] + \
-          [z + DZ  for z in [0, Z_STEP, 2*Z_STEP]]
-z_ticks = sorted(set(z_ticks))
-ax.zaxis.set_ticks(z_ticks)
-ax.zaxis.set_ticklabels([f"{v - round(v/Z_STEP)*Z_STEP:+.2f}" for v in z_ticks])
+# ±0.1 tick marks and labels on every floor
+all_z_ticks = sorted([lv * Z_STEP + dz for lv in range(N) for dz in (-DZ, DZ)])
+ax.zaxis.set_ticks(all_z_ticks)
+ax.zaxis.set_ticklabels(["-0.1", "+0.1"] * N)
 
-ax.tick_params(labelsize=6, pad=1)
-ax.set_xlabel("X (AU)", fontsize=8, labelpad=5)
-ax.set_ylabel("Y (AU)", fontsize=8, labelpad=5)
-ax.set_zlabel("Z (AU)", fontsize=8, labelpad=5)
+ax.tick_params(labelsize=8, pad=1)
+ax.set_xlabel("X (AU)", fontsize=11, labelpad=6)
+ax.set_ylabel("Y (AU)", fontsize=11, labelpad=6)
+ax.set_zlabel("")          # suppress default (unreliable in 3D)
+ax.text2D(-0.08, 0.5, "Z (AU)", transform=ax.transAxes,
+          fontsize=11, rotation=90, va="center", ha="center")
 
-ax.legend(fontsize=7.5, loc="upper left", framealpha=0.85, edgecolor="#aaaaaa")
+ax.legend(fontsize=10, loc="upper left", framealpha=0.85, edgecolor="#aaaaaa")
 
 out_dir = Path("orbit_plots")
 out_dir.mkdir(exist_ok=True)
 for ext in ("eps", "png"):
     out_path = out_dir / f"stacked_orbits.{ext}"
-    fig.savefig(str(out_path), format=ext, bbox_inches="tight", pad_inches=0.1, dpi=150)
+    fig.savefig(str(out_path), format=ext, bbox_inches="tight", pad_inches=0.3, dpi=150)
     print(f"saved → {out_path}")
 plt.close(fig)
 print("done")
