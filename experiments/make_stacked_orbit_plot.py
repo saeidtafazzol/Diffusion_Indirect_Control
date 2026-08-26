@@ -51,7 +51,7 @@ xy_half  = 0.58 * max(all_orb[:, 0].max() - all_orb[:, 0].min(),
 X_LO, X_HI = x_mid - xy_half, x_mid + xy_half
 Y_LO, Y_HI = y_mid - xy_half, y_mid + xy_half
 DZ     = 0.10    # half-width of each Z band (band spans ±0.1 AU)
-Z_STEP = 0.35    # floor-to-floor offset (> 2*DZ so bands never overlap)
+Z_STEP = 0.55    # floor-to-floor offset — larger = more breathing room
 
 TARGETS = [
     ("-300 days", "shift_-300d", "00"),
@@ -91,8 +91,7 @@ for level, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
             color=C_EARTH, lw=0.9, ls=":", label="Earth orbit" if lbl else None, alpha=0.75)
     ax.plot(mars_orbit[:, 0],  mars_orbit[:, 1],  mars_orbit[:, 2] + z_off,
             color=C_MARS,  lw=0.9, ls=":", label="Mars orbit"  if lbl else None, alpha=0.75)
-    ax.scatter(0, 0, z_off, color=C_SUN, s=50, marker="*", zorder=6,
-               label="Sun" if lbl else None)
+
 
     ax.plot(r_opt[:, 0],  r_opt[:, 1],  r_opt[:, 2]  + z_off,
             color=C_IPOPT, lw=1.8, ls="-",  label="IPOPT refined" if lbl else None, zorder=4)
@@ -102,11 +101,10 @@ for level, (shift_label, shift_dir, trial_id) in enumerate(TARGETS):
     ax.scatter(i_st[0], i_st[1], i_st[2] + z_off, color=C_EARTH, s=20, zorder=7)
     ax.scatter(f_st[0], f_st[1], f_st[2] + z_off, color=C_MARS,  s=20, zorder=7)
 
-    # Shift label: spread horizontally so they don't overlap (Z is too compressed)
-    x_lbl = X_LO + 0.10 + level * (X_HI - X_LO) * 0.28
-    ax.text(x_lbl, Y_LO + 0.05, z_off - DZ + 0.005,
+    # Label at the right side of each floor level, clear of the orbits
+    ax.text(X_HI + 0.05, y_mid, z_off,
             f"shift: {shift_label}",
-            fontsize=8.5, ha="left", va="bottom",
+            fontsize=8.5, ha="left", va="center",
             color="#111111", fontweight="bold")
 
 ax.set_xlim(X_LO, X_HI)
