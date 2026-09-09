@@ -100,8 +100,7 @@ legend_handles = [
 fig.legend(handles=legend_handles, loc="lower center", ncol=6, fontsize=10,
            framealpha=0.9, bbox_to_anchor=(0.5, 0.0))
 
-fig.suptitle("Shift −300 days", fontsize=13, fontweight="bold")
-fig.tight_layout(rect=[0, 0.07, 1, 0.97])
+fig.tight_layout(rect=[0, 0.07, 1, 1.0])
 
 out_dir = _root / "orbit_plots"
 out_dir.mkdir(exist_ok=True)

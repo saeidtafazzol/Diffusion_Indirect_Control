@@ -711,8 +711,7 @@ def save_trial_json(trial_dir, shift, seed, initial_state, final_state,
     with open(out_path, "w") as fp:
         json.dump(data, fp, separators=(",", ":"))
     kb = out_path.stat().st_size / 1024
-    print(f"    json → {out_path.relative_to(Path('shift_eps_study'))}  ({kb:.0f} KB)",
-          flush=True)
+    print(f"    json → {out_path}  ({kb:.0f} KB)", flush=True)
 
 
 def write_live_summary(out_path, args, shifts, completed_results,
@@ -782,6 +781,8 @@ def parse_args():
     p.add_argument("--num-diffusion-steps", type=int,   default=30)
     p.add_argument("--no-plots",            action="store_true",
                    help="Disable all PNG/JSON output; write detail.txt per shift only")
+    p.add_argument("--no-frames",           action="store_true",
+                   help="Skip frame PNGs but still save trial_data.json")
     p.add_argument("--casadi-max-iter",     type=int,   default=160,
                help="IPOPT max iters for Method A")
     p.add_argument("--casadi-max-iter-b",   type=int,   default=240,
@@ -789,6 +790,12 @@ def parse_args():
     p.add_argument("--res-tol",             type=float, default=1e-8)
     p.add_argument("--seed-offset",         type=int,   default=0,
                    help="Start seeds at this value (use to continue after a previous run)")
+    p.add_argument("--seeds",              type=int,   nargs="+", default=None,
+                   help="Explicit seed values to run for BOTH methods (overrides --seed-offset / --num-trials)")
+    p.add_argument("--seeds-a",            type=int,   nargs="+", default=None,
+                   help="Seed values for Method A only (overrides --seeds for A)")
+    p.add_argument("--seeds-b",            type=int,   nargs="+", default=None,
+                   help="Seed values for Method B only (overrides --seeds for B)")
     p.add_argument("--output-dir",          type=Path,  default=Path("shift_eps_study"))
     return p.parse_args()
 
@@ -836,10 +843,16 @@ def main():
     shifts   = args.shifts_days
     N_shifts = len(shifts)
     N_trials = args.num_trials
-    seeds    = list(range(args.seed_offset, args.seed_offset + N_trials))
+    _base_seeds = args.seeds if args.seeds else list(range(args.seed_offset, args.seed_offset + N_trials))
+    seeds_a = args.seeds_a if args.seeds_a is not None else _base_seeds
+    seeds_b = args.seeds_b if args.seeds_b is not None else _base_seeds
+    seeds_a_set = set(seeds_a)
+    seeds_b_set = set(seeds_b)
+    # union of all seeds to iterate over; each method runs only its own subset
+    all_seeds = sorted(set(seeds_a) | set(seeds_b))
 
     print("\n" + "=" * 72)
-    print(f"  {N_shifts} shifts × {N_trials} trials/shift × 2 methods")
+    print(f"  {N_shifts} shifts  A: {len(seeds_a)} seeds  B: {len(seeds_b)} seeds")
     print(f"  A: diff_steps={args.num_diffusion_steps}  max_iter={args.casadi_max_iter}")
     print(f"  B: {len(EPS_STAGES)} stages × {args.casadi_max_iter_b} iter/stage  "
           f"({len(EPS_STAGES) * args.casadi_max_iter_b} total max)")
@@ -860,93 +873,106 @@ def main():
         trial_log = []  # (ok_a, ok_b, res_a, res_b, stage_log, t_a, t_b)
         lbw_b, ubw_b = make_bounds(i_st, f_st, n_points)  # fixed per shift
 
-        for seed in seeds:
+        for seed in all_seeds:
+            run_a = seed in seeds_a_set
+            run_b = seed in seeds_b_set
             trial_dir = args.output_dir / f"shift_{shift:+d}d" / f"trial_{seed:02d}"
+            save_frames = not args.no_plots and not args.no_frames
 
             # ── Method A ───────────────────────────────────────────────────────
-            t_a = time.perf_counter()
-            diff_frames = run_diffusion(policy, params, sample, _apply,
-                                        num_steps=args.num_diffusion_steps, rng_seed=seed)
-            iter_cb_A.iterates.clear()
-            z_diff  = diff_frames[-1]
-            z_opt_a, st_a, res_a = solve_bvp_oneshot(
-                refiner_A, solver_A, z_diff, i_st, f_st)
-            t_a  = time.perf_counter() - t_a
-            ok_a = res_a < args.res_tol
+            if run_a:
+                t_a = time.perf_counter()
+                diff_frames = run_diffusion(policy, params, sample, _apply,
+                                            num_steps=args.num_diffusion_steps, rng_seed=seed)
+                iter_cb_A.iterates.clear()
+                z_diff  = diff_frames[-1]
+                z_opt_a, st_a, res_a = solve_bvp_oneshot(
+                    refiner_A, solver_A, z_diff, i_st, f_st)
+                t_a  = time.perf_counter() - t_a
+                ok_a = res_a < args.res_tol
 
-            if not args.no_plots:
-                # Save diffusion frames → trial_XX/A/diffusion/
-                diff_dir  = trial_dir / "A" / "diffusion"
-                n_df = len(diff_frames)
-                for fi, z_df in enumerate(diff_frames):
-                    enqueue_frame(
-                        z_df, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
-                        refiner_A,
-                        f"A s{seed:02d}  diffusion step {fi+1}/{n_df}",
-                        diff_dir / f"frame_{fi:03d}.png",
-                        color=_DIFF_COLOR,
+                if save_frames:
+                    diff_dir = trial_dir / "A" / "diffusion"
+                    n_df = len(diff_frames)
+                    for fi, z_df in enumerate(diff_frames):
+                        enqueue_frame(
+                            z_df, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
+                            refiner_A,
+                            f"A s{seed:02d}  diffusion step {fi+1}/{n_df}",
+                            diff_dir / f"frame_{fi:03d}.png",
+                            color=_DIFF_COLOR,
+                        )
+                    ipopt_dir = trial_dir / "A" / "ipopt"
+                    a_ipopt = (
+                        [np.asarray(z_diff, np.float64).reshape(n_points, AUGMENTED_DIM)]
+                        + [it.reshape(n_points, AUGMENTED_DIM) for it in iter_cb_A.iterates]
+                        + [z_opt_a]
                     )
-                # Save IPOPT iterates → trial_XX/A/ipopt/
-                ipopt_dir = trial_dir / "A" / "ipopt"
-                a_ipopt = (
-                    [np.asarray(z_diff, np.float64).reshape(n_points, AUGMENTED_DIM)]
-                    + [it.reshape(n_points, AUGMENTED_DIM) for it in iter_cb_A.iterates]
-                    + [z_opt_a]
-                )
-                if len(a_ipopt) >= 2 and np.allclose(a_ipopt[-1], a_ipopt[-2], atol=1e-12):
-                    a_ipopt = a_ipopt[:-1]
-                n_ai = len(a_ipopt)
-                for fi, z_af in enumerate(a_ipopt):
-                    enqueue_frame(
-                        z_af, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
-                        refiner_A,
-                        f"A s{seed:02d}  IPOPT iter {fi}/{n_ai-1}  {st_a[:16]}  res={res_a:.1e}",
-                        ipopt_dir / f"iter_{fi:03d}.png",
-                        color=_IPOPT_COLOR,
-                    )
+                    if len(a_ipopt) >= 2 and np.allclose(a_ipopt[-1], a_ipopt[-2], atol=1e-12):
+                        a_ipopt = a_ipopt[:-1]
+                    n_ai = len(a_ipopt)
+                    for fi, z_af in enumerate(a_ipopt):
+                        enqueue_frame(
+                            z_af, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
+                            refiner_A,
+                            f"A s{seed:02d}  IPOPT iter {fi}/{n_ai-1}  {st_a[:16]}  res={res_a:.1e}",
+                            ipopt_dir / f"iter_{fi:03d}.png",
+                            color=_IPOPT_COLOR,
+                        )
+                else:
+                    a_ipopt = []
             else:
+                diff_frames = []
+                z_opt_a = np.zeros((n_points, AUGMENTED_DIM), np.float64)
+                st_a, res_a, t_a, ok_a = "skipped", float("inf"), 0.0, False
                 a_ipopt = []
 
             # ── Method B ───────────────────────────────────────────────────────
-            t_b = time.perf_counter()
-            z_b_init = make_continuation_guess(
-                f_fwd, initial_state, final_state, norm, n_points, seed)
+            if run_b:
+                t_b = time.perf_counter()
+                z_b_init = make_continuation_guess(
+                    f_fwd, initial_state, final_state, norm, n_points, seed)
+                for cb_b in iter_cbs_b:
+                    cb_b.iterates.clear()
+                _, st_b, res_b, stage_log, z_stages_b = solve_bvp_continuation(
+                    cont_refiners, cont_solvers, z_b_init, i_st, f_st)
+                t_b  = time.perf_counter() - t_b
+                ok_b = res_b < args.res_tol
 
-            # Clear all per-stage callbacks before continuation run
-            for cb_b in iter_cbs_b:
-                cb_b.iterates.clear()
-
-            _, st_b, res_b, stage_log, z_stages_b = solve_bvp_continuation(
-                cont_refiners, cont_solvers, z_b_init, i_st, f_st)
-            t_b  = time.perf_counter() - t_b
-            ok_b = res_b < args.res_tol
+                if save_frames:
+                    b_stage_iterates_all = []
+                    for si_b, (eps_b, st_b_s, _) in enumerate(stage_log):
+                        stage_dir = trial_dir / "B" / f"stage_{si_b}_eps{eps_b:.0e}"
+                        prev_z = (z_b_init.reshape(n_points, AUGMENTED_DIM)
+                                  if si_b == 0 else z_stages_b[si_b - 1])
+                        b_iters = (
+                            [prev_z]
+                            + [it.reshape(n_points, AUGMENTED_DIM)
+                               for it in iter_cbs_b[si_b].iterates]
+                            + [z_stages_b[si_b]]
+                        )
+                        if len(b_iters) >= 2 and np.allclose(b_iters[-1], b_iters[-2], atol=1e-12):
+                            b_iters = b_iters[:-1]
+                        b_stage_iterates_all.append(b_iters)
+                        n_bi = len(b_iters)
+                        for fi_b, z_bf in enumerate(b_iters):
+                            enqueue_frame(
+                                z_bf, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
+                                cont_refiners[si_b],
+                                (f"B s{seed:02d}  stage {si_b+1}/5  ε={eps_b:.0e}"
+                                 f"  iter {fi_b}/{n_bi-1}  {st_b_s[:16]}"),
+                                stage_dir / f"iter_{fi_b:03d}.png",
+                                color=_CONT_COLOR,
+                            )
+                else:
+                    b_stage_iterates_all = []
+            else:
+                z_b_init = np.zeros((n_points, AUGMENTED_DIM), np.float64)
+                z_stages_b, stage_log = [], []
+                st_b, res_b, t_b, ok_b = "skipped", float("inf"), 0.0, False
+                b_stage_iterates_all = []
 
             if not args.no_plots:
-                # Save per-stage iterate frames → trial_XX/B/stage_N_epsXXX/
-                b_stage_iterates_all = []
-                for si_b, (eps_b, st_b_s, _) in enumerate(stage_log):
-                    stage_dir = trial_dir / "B" / f"stage_{si_b}_eps{eps_b:.0e}"
-                    prev_z = (z_b_init.reshape(n_points, AUGMENTED_DIM)
-                              if si_b == 0 else z_stages_b[si_b - 1])
-                    b_iters = (
-                        [prev_z]
-                        + [it.reshape(n_points, AUGMENTED_DIM)
-                           for it in iter_cbs_b[si_b].iterates]
-                        + [z_stages_b[si_b]]
-                    )
-                    if len(b_iters) >= 2 and np.allclose(b_iters[-1], b_iters[-2], atol=1e-12):
-                        b_iters = b_iters[:-1]
-                    b_stage_iterates_all.append(b_iters)
-                    n_bi = len(b_iters)
-                    for fi_b, z_bf in enumerate(b_iters):
-                        enqueue_frame(
-                            z_bf, refiner_A.time_grid, i_st[:3], f_st[:3], norm,
-                            cont_refiners[si_b],
-                            (f"B s{seed:02d}  stage {si_b+1}/5  ε={eps_b:.0e}"
-                             f"  iter {fi_b}/{n_bi-1}  {st_b_s[:16]}"),
-                            stage_dir / f"iter_{fi_b:03d}.png",
-                            color=_CONT_COLOR,
-                        )
                 # Save all raw data to JSON (blocking — data integrity)
                 save_trial_json(
                     trial_dir, shift, seed, initial_state, final_state,
@@ -957,6 +983,10 @@ def main():
                     st_b, res_b, t_b, ok_b,
                 )
 
+            run_a_str = f"A={'OK' if ok_a else ('--' if run_a else 'sk')}({res_a:.1e} {t_a:.0f}s)"
+            run_b_str = f"B={'OK' if ok_b else ('--' if run_b else 'sk')}({res_b:.1e} {t_b:.0f}s)"
+            stages_str = " ".join(f"{e:.0e}:{s[:4]}" for e, s, _ in stage_log) if stage_log else "skipped"
+            print(f"  s{seed:02d}  {run_a_str}  {run_b_str}  [{stages_str}]", flush=True)
             trial_log.append((ok_a, ok_b, res_a, res_b, stage_log, t_a, t_b))
 
             stages = " ".join(f"{e:.0e}:{s[:4]}" for e, s, _ in stage_log)

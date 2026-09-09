@@ -57,9 +57,9 @@ LBL_DX = [0.05, 0.05, 0.05]  # x offset: push all labels right of centre
 LBL_DY = [-0.1, -0.1, -0.1]  # y offset: push all labels toward viewer
 
 TARGETS = [
-    ("−300 days", "shift_-300d", "00"),
-    ("+100 days", "shift_+100d", "00"),
-    ("+500 days", "shift_+500d", "09"),
+    ("100 days",  "shift_+100d", "00"),
+    ("480 days",  "shift_-300d", "00"),
+    ("500 days",  "shift_+500d", "09"),
 ]
 N = len(TARGETS)
 Z_LO_TOT = 0 - DZ - 0.02
