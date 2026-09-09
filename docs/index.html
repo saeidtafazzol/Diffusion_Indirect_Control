@@ -1,0 +1,788 @@
+<title>Diffusion Indirect Control</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A diffusion model generates costate initial guesses for indirect BVP solvers, achieving 100% convergence on Earth–Mars transfers where ε-continuation manages 18–62%.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #f5f8ff;
+  --bg-alt:    #edf1fb;
+  --bg-dark:   #07090f;
+  --bg-card:   #0e1c35;
+  --surface:   #ffffff;
+  --text:      #0d1829;
+  --text-2:    #3d5070;
+  --text-inv:  #c8d8f0;
+  --text-inv2: #7a96be;
+  --accent:    #2b6cb8;
+  --accent-hi: #60a5fa;
+  --border:    #dbe4f5;
+  --border-d:  #1e3558;
+  --mono-bg:   #0c1a30;
+
+  --fs-xs:   0.72rem;
+  --fs-sm:   0.85rem;
+  --fs-base: 1rem;
+  --fs-lg:   1.15rem;
+  --fs-xl:   1.4rem;
+  --fs-2xl:  1.85rem;
+  --fs-3xl:  2.6rem;
+  --fs-4xl:  3.4rem;
+
+  --r: 6px;
+  --max: 860px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #07090f;
+    --bg-alt:    #0b1120;
+    --bg-dark:   #07090f;
+    --surface:   #0e1c35;
+    --text:      #c8d8f0;
+    --text-2:    #7a96be;
+    --accent:    #60a5fa;
+    --accent-hi: #93c5fd;
+    --border:    #1e3558;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #07090f;
+  --bg-alt:    #0b1120;
+  --bg-dark:   #07090f;
+  --surface:   #0e1c35;
+  --text:      #c8d8f0;
+  --text-2:    #7a96be;
+  --accent:    #60a5fa;
+  --accent-hi: #93c5fd;
+  --border:    #1e3558;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Source Serif 4', 'Georgia', serif;
+  font-size: var(--fs-base);
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.wrap {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.hero {
+  background: var(--bg-dark);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+#orbit-canvas {
+  display: block;
+  width: 100%;
+  height: 420px;
+}
+.hero-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-hi);
+  margin-bottom: 0.9rem;
+}
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.9rem, 5vw, var(--fs-4xl));
+  font-weight: 800;
+  color: #e8f0ff;
+  line-height: 1.1;
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+  text-shadow: 0 2px 24px rgba(0,0,30,0.7);
+}
+.hero-sub {
+  font-family: 'Source Serif 4', serif;
+  font-size: var(--fs-lg);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-inv2);
+  max-width: 560px;
+  text-wrap: balance;
+  margin-bottom: 1.8rem;
+}
+.hero-links {
+  display: flex;
+  gap: 0.75rem;
+  pointer-events: all;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.btn {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--r);
+  border: 1.5px solid rgba(96,165,250,0.45);
+  color: #b8d4ff;
+  background: rgba(14,28,53,0.65);
+  backdrop-filter: blur(6px);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  cursor: pointer;
+  text-decoration: none !important;
+}
+.btn:hover { background: rgba(43,108,184,0.55); border-color: var(--accent-hi); color: #e0edff; }
+.btn-primary {
+  background: rgba(43,108,184,0.8);
+  border-color: var(--accent-hi);
+  color: #e8f4ff;
+}
+.btn-primary:hover { background: rgba(43,108,184,1); }
+
+/* ── Authors ─────────────────────────────────────────────────────────────── */
+.authors-bar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-d);
+  padding: 0.9rem 1.5rem;
+  text-align: center;
+}
+.authors-bar p {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-sm);
+  color: var(--text-inv2);
+  letter-spacing: 0.02em;
+}
+.authors-bar strong {
+  color: var(--text-inv);
+  font-weight: 600;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+section { padding: 4.5rem 0; }
+section.dark {
+  background: var(--bg-dark);
+  color: var(--text-inv);
+}
+section.alt { background: var(--bg-alt); }
+
+.section-label {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+section.dark .section-label { color: var(--accent-hi); }
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+section.dark h2 { color: #ddeaff; }
+
+p { max-width: 65ch; margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Abstract ────────────────────────────────────────────────────────────── */
+.abstract-text {
+  font-size: var(--fs-lg);
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--text-2);
+  max-width: 65ch;
+}
+.abstract-text strong { color: var(--text); font-weight: 400; }
+
+/* ── Method ──────────────────────────────────────────────────────────────── */
+.method-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+@media (max-width: 640px) { .method-grid { grid-template-columns: 1fr; } }
+
+.method-step {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-d);
+  border-radius: var(--r);
+  padding: 1.5rem;
+}
+.step-num {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-hi);
+  margin-bottom: 0.4rem;
+}
+.step-title {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: #ddeaff;
+  margin-bottom: 0.75rem;
+}
+.step-body {
+  font-size: var(--fs-sm);
+  color: var(--text-inv2);
+  line-height: 1.7;
+  max-width: none;
+}
+.step-body strong { color: var(--text-inv); font-weight: 600; }
+
+.arrow-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-hi);
+  font-size: 1.5rem;
+  align-self: center;
+  opacity: 0.6;
+}
+@media (max-width: 640px) { .arrow-connector { transform: rotate(90deg); } }
+
+.eps-stages {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+.eps-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.67rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  background: rgba(43,108,184,0.25);
+  border: 1px solid rgba(96,165,250,0.3);
+  color: #93c5fd;
+}
+
+/* ── Metrics ─────────────────────────────────────────────────────────────── */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+@media (max-width: 540px) { .metrics-row { grid-template-columns: 1fr 1fr; } }
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1.2rem 1.1rem;
+}
+.metric-val {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.metric-val sup { font-size: 0.45em; vertical-align: super; }
+.metric-label {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-top: 0.3rem;
+}
+
+/* ── Results table ───────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+thead th {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding: 0.55rem 0.9rem;
+  border-bottom: 2px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody td {
+  padding: 0.5rem 0.9rem;
+  text-align: right;
+  color: var(--text);
+}
+tbody td:first-child { text-align: left; font-weight: 500; }
+
+.good  { color: #16a34a; font-weight: 600; }
+.warn  { color: #b45309; }
+.zero  { color: var(--text-2); }
+.dash  { color: var(--text-2); letter-spacing: 0; }
+
+.table-divider td { border-left: 2px solid var(--border); }
+
+/* ── BibTeX ──────────────────────────────────────────────────────────────── */
+.bibtex-block {
+  background: var(--mono-bg);
+  border: 1px solid var(--border-d);
+  border-radius: var(--r);
+  padding: 1.4rem 1.6rem;
+  overflow-x: auto;
+}
+.bibtex-block pre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-sm);
+  color: #93b8e8;
+  line-height: 1.65;
+  white-space: pre;
+}
+.bibtex-block .bib-key   { color: #60a5fa; }
+.bibtex-block .bib-field { color: #7dd3fc; }
+.bibtex-block .bib-val   { color: #a5c8ff; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+footer {
+  background: var(--bg-dark);
+  border-top: 1px solid var(--border-d);
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+footer p {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  color: var(--text-inv2);
+  letter-spacing: 0.05em;
+  max-width: none;
+  margin: 0;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+nav {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
+  z-index: 10;
+  pointer-events: none;
+}
+nav a {
+  pointer-events: all;
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(200,216,240,0.6);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+nav a:hover { color: #e0edff; text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <nav>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#bibtex">Cite</a>
+  </nav>
+  <canvas id="orbit-canvas" aria-hidden="true"></canvas>
+  <div class="hero-text">
+    <p class="hero-eyebrow">Earth–Mars Trajectory Optimization</p>
+    <h1 class="hero-title">Diffusion-Based Indirect Control</h1>
+    <p class="hero-sub">Costate initialization via denoising diffusion for indirect spacecraft trajectory optimization</p>
+    <div class="hero-links">
+      <a class="btn btn-primary" href="https://github.com/saeidtafazzol/Diffusion_Indirect_Control">Code</a>
+      <a class="btn" href="#">Paper</a>
+      <a class="btn" href="#">arXiv</a>
+    </div>
+  </div>
+</section>
+
+<div class="authors-bar">
+  <p><strong>Saeed Tafazzol</strong> &nbsp;·&nbsp; Aerospace Engineering</p>
+</div>
+
+<!-- ── Abstract ──────────────────────────────────────────────────────────── -->
+<section id="abstract">
+  <div class="wrap">
+    <p class="section-label">Abstract</p>
+    <h2>The initialization problem in indirect optimal control</h2>
+    <p class="abstract-text">
+      Indirect methods for spacecraft trajectory optimization offer superior solution accuracy and mass optimality, but require a precise initial guess for the costate variables — a notoriously difficult problem that causes standard solvers to fail on challenging transfer windows. We train a <strong>denoising diffusion model</strong> on a dataset of optimal Earth–Mars trajectories, then use it to generate costate initializations for a boundary-value problem (BVP) solver. Across 17 time shifts spanning one synodic period (~780 days) and 250 trials each, our method achieves <strong>100% convergence</strong> on 13 of 17 windows, compared to 18–62% for the ε-continuation baseline — while producing identical final masses on all cases where both methods converge.
+    </p>
+  </div>
+</section>
+
+<!-- ── Method ─────────────────────────────────────────────────────────────── -->
+<section id="method" class="dark">
+  <div class="wrap">
+    <p class="section-label">Method</p>
+    <h2>Two-stage costate initialization</h2>
+    <div class="method-grid">
+      <div class="method-step">
+        <p class="step-num">Stage 01</p>
+        <p class="step-title">Diffusion Denoising</p>
+        <p class="step-body">
+          A transformer-based diffusion model, trained on <strong>8,000 optimal trajectories</strong>, denoises a random noise trajectory conditioned on the departure and arrival boundary states. The 30-step reverse process produces a physically plausible state–costate trajectory
+          <strong>(r, v, m, λ<sub>r</sub>, λ<sub>v</sub>, λ<sub>m</sub>)</strong>
+          at 32 collocation nodes.
+        </p>
+      </div>
+      <div class="method-step">
+        <p class="step-num">Stage 02</p>
+        <p class="step-title">BVP Refinement</p>
+        <p class="step-body">
+          The diffusion output initializes an <strong>IPOPT-based collocation solver</strong> (160 iterations, 8-point RK4 continuity) that enforces the Pontryagin optimality conditions exactly. Convergence is declared at continuity residual &lt; 10<sup>−8</sup>; clean cases reach 10<sup>−15</sup>.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;">
+      <p class="step-body" style="color:var(--text-inv2); margin-bottom:0.6rem;">
+        Compared against: ε-continuation baseline starting from a Keplerian-propagated guess, through five regularization stages:
+      </p>
+      <div class="eps-stages">
+        <span class="eps-pill">ε = 1</span>
+        <span class="eps-pill">ε = 0.1</span>
+        <span class="eps-pill">ε = 0.01</span>
+        <span class="eps-pill">ε = 0.001</span>
+        <span class="eps-pill">ε = 0.0001</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Results ────────────────────────────────────────────────────────────── -->
+<section id="results" class="alt">
+  <div class="wrap">
+    <p class="section-label">Results</p>
+    <h2>Convergence across one synodic period</h2>
+
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-val">100<sup>%</sup></div>
+        <div class="metric-label">Ours — 13 of 17 windows</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">250</div>
+        <div class="metric-label">Trials per shift</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">17</div>
+        <div class="metric-label">Transfer windows</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Shift (d)</th>
+            <th>Ours</th>
+            <th>Baseline</th>
+            <th>m<sub>f</sub> (kg)</th>
+            <th>Shift (d)</th>
+            <th>Ours</th>
+            <th>Baseline</th>
+            <th>m<sub>f</sub> (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>+0</td>   <td class="good">100.0%</td><td class="warn">62.0%</td><td>603.7</td>
+            <td class="table-divider">+400</td><td class="zero">0.4%</td><td class="zero">6.0%</td><td>285.0</td>
+          </tr>
+          <tr>
+            <td>+50</td>  <td class="good">100.0%</td><td class="warn">56.8%</td><td>659.3</td>
+            <td class="table-divider">+480</td><td class="good">100.0%</td><td class="warn">18.4%</td><td>354.1</td>
+          </tr>
+          <tr>
+            <td>+80</td>  <td class="good">100.0%</td><td class="warn">57.6%</td><td>729.6</td>
+            <td class="table-divider">+500</td><td class="good">100.0%</td><td class="warn">16.8%</td><td>393.3</td>
+          </tr>
+          <tr>
+            <td>+100</td> <td class="good">100.0%</td><td class="warn">52.4%</td><td>722.5</td>
+            <td class="table-divider">+580</td><td class="good">100.0%</td><td class="warn">31.2%</td><td>476.6</td>
+          </tr>
+          <tr>
+            <td>+180</td> <td class="good">100.0%</td><td class="warn">48.8%</td><td>489.1</td>
+            <td class="table-divider">+600</td><td class="good">100.0%</td><td class="warn">32.4%</td><td>449.8</td>
+          </tr>
+          <tr>
+            <td>+200</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
+            <td class="table-divider">+680</td><td class="good">100.0%</td><td class="warn">54.4%</td><td>544.2</td>
+          </tr>
+          <tr>
+            <td>+280</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
+            <td class="table-divider">+700</td><td class="good">100.0%</td><td class="warn">52.8%</td><td>486.2</td>
+          </tr>
+          <tr>
+            <td>+300</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
+            <td class="table-divider">+730</td><td class="good">100.0%</td><td class="warn">59.2%</td><td>568.6</td>
+          </tr>
+          <tr>
+            <td>+380</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
+            <td class="table-divider"></td><td></td><td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:var(--fs-xs); color:var(--text-2); margin-top:0.75rem; font-family:'Syne',sans-serif; letter-spacing:0.03em;">
+      Shifts +200 to +380 represent a difficult conjunction zone where both methods fail consistently. <em>m<sub>f</sub></em> shown only for converged cases; both methods reach identical optima (Δm &lt; 0.1 kg) when both converge.
+    </p>
+  </div>
+</section>
+
+<!-- ── BibTeX ─────────────────────────────────────────────────────────────── -->
+<section id="bibtex" class="dark">
+  <div class="wrap">
+    <p class="section-label">Citation</p>
+    <h2>BibTeX</h2>
+    <div class="bibtex-block">
+      <pre><span class="bib-key">@article</span>{tafazzol2025dbic,
+  <span class="bib-field">title</span>   = {<span class="bib-val">Diffusion-Based Costate Initialization for Indirect
+            Spacecraft Trajectory Optimization</span>},
+  <span class="bib-field">author</span>  = {<span class="bib-val">Tafazzol, Saeed</span>},
+  <span class="bib-field">journal</span> = {<span class="bib-val">arXiv preprint</span>},
+  <span class="bib-field">year</span>    = {<span class="bib-val">2025</span>},
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <p>Code available on <a href="https://github.com/saeidtafazzol/Diffusion_Indirect_Control" style="color:var(--accent-hi)">GitHub</a></p>
+</footer>
+
+<!-- ── Orbital canvas ─────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  const canvas = document.getElementById('orbit-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let W, H, cx, cy, scale;
+  let t = 0;
+  let raf;
+
+  // Keplerian params (normalised: Earth a=1, T_E=1)
+  const E = { a: 1.000, e: 0.017, T: 1.000, color: '#4a9eff', r: 5, label: 'Earth' };
+  const M = { a: 1.524, e: 0.093, T: 1.881, color: '#f87171', r: 4, label: 'Mars' };
+
+  // arc state
+  let arcPhase = 0; // 0=hidden, 0→1=drawing, >1=fading
+  let arcEarth = null, arcMars = null;
+  const ARC_DRAW = 1.2, ARC_HOLD = 0.6, ARC_FADE = 0.4, ARC_CYCLE = 3.5;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    W = canvas.width  = rect.width  * dpr;
+    H = canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    cx = rect.width  / 2;
+    cy = rect.height / 2 + 20;
+    scale = Math.min(rect.width, rect.height) * 0.29;
+  }
+
+  function keplerPos(body, time) {
+    const M_anom = (2 * Math.PI * time / body.T) % (2 * Math.PI);
+    // Solve Kepler's equation E - e*sin(E) = M via Newton
+    let E = M_anom;
+    for (let i = 0; i < 5; i++) E -= (E - body.e * Math.sin(E) - M_anom) / (1 - body.e * Math.cos(E));
+    const nu = 2 * Math.atan2(Math.sqrt(1 + body.e) * Math.sin(E / 2), Math.sqrt(1 - body.e) * Math.cos(E / 2));
+    const r  = body.a * (1 - body.e * Math.cos(E));
+    return { x: r * Math.cos(nu), y: r * Math.sin(nu) };
+  }
+
+  function toScreen(px, py) {
+    return { x: cx + px * scale, y: cy - py * scale };
+  }
+
+  function drawOrbit(body, alpha) {
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const p = keplerPos(body, body.T * i / 200);
+      const s = toScreen(p.x, p.y);
+      i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(255,255,255,${0.10 * alpha})`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawBody(body, time, alpha) {
+    const p = keplerPos(body, time);
+    const s = toScreen(p.x, p.y);
+    // glow
+    const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, body.r * 3);
+    g.addColorStop(0, body.color);
+    g.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, body.r * 3, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.globalAlpha = 0.4 * alpha;
+    ctx.fill();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, body.r, 0, Math.PI * 2);
+    ctx.fillStyle = body.color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    return { x: s.x, y: s.y, world: p };
+  }
+
+  function drawSun() {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 22);
+    g.addColorStop(0, '#fff8dc');
+    g.addColorStop(0.4, '#fbbf24');
+    g.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#fde68a';
+    ctx.fill();
+  }
+
+  function drawArc(p1, p2, progress, alpha) {
+    // Cubic bezier: control points curve outward
+    const mx = (p1.x + p2.x) / 2 + (p2.y - p1.y) * 0.18;
+    const my = (p1.y + p2.y) / 2 - (p2.x - p1.x) * 0.18;
+    // Draw partial bezier by sampling
+    ctx.beginPath();
+    const steps = Math.floor(80 * progress);
+    for (let i = 0; i <= steps; i++) {
+      const t2 = (i / 80);
+      const tt = 1 - t2;
+      const x = tt*tt*p1.x + 2*tt*t2*mx + t2*t2*p2.x;
+      const y = tt*tt*p1.y + 2*tt*t2*my + t2*t2*p2.y;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `rgba(251,191,36,${0.85 * alpha})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Stars
+    if (!frame._stars) {
+      frame._stars = Array.from({ length: 120 }, () => ({
+        x: Math.random(), y: Math.random(), s: Math.random() * 1.3 + 0.3,
+        a: Math.random() * 0.6 + 0.2
+      }));
+    }
+    frame._stars.forEach(s => {
+      ctx.beginPath();
+      ctx.arc(s.x * (W / (window.devicePixelRatio||1)), s.y * (H / (window.devicePixelRatio||1)), s.s, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+      ctx.fill();
+    });
+
+    drawOrbit(E, 1);
+    drawOrbit(M, 1);
+    drawSun();
+
+    const dt = 0.0008;
+    t += dt;
+    arcPhase += dt / (ARC_CYCLE * 0.0008 / 2 * 0.0008);
+    // Simpler: advance arcPhase by a fixed fraction per frame
+    arcPhase += 0.003;
+    if (arcPhase > ARC_DRAW + ARC_HOLD + ARC_FADE) {
+      arcPhase = 0;
+      arcEarth = null;
+    }
+
+    const ePos = drawBody(E, t, 1);
+    // Mars is 0.476 Earth-years (transfer ~349d = 0.956 yr) ahead in display time for arc
+    const mPos = drawBody(M, t + 0.58, 1);
+
+    // Arc
+    if (arcPhase < 0.01) {
+      arcEarth = { x: ePos.x, y: ePos.y };
+      arcMars  = { x: mPos.x, y: mPos.y };
+    }
+    if (arcEarth) {
+      let progress, alpha;
+      if (arcPhase < ARC_DRAW) {
+        progress = arcPhase / ARC_DRAW;
+        alpha = 1;
+      } else if (arcPhase < ARC_DRAW + ARC_HOLD) {
+        progress = 1;
+        alpha = 1;
+      } else {
+        progress = 1;
+        alpha = 1 - (arcPhase - ARC_DRAW - ARC_HOLD) / ARC_FADE;
+      }
+      if (alpha > 0) drawArc(arcEarth, arcMars, progress, Math.max(0, alpha));
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  const ro = new ResizeObserver(() => { resize(); });
+  ro.observe(canvas);
+  resize();
+  frame();
+})();
+</script>
