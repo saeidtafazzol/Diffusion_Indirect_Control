@@ -955,8 +955,9 @@ nav a:hover { color: #e0edff; text-decoration: none; }
 
     if (arcPhase < 0.01) {
       arcEarth = { x: ePos.x, y: ePos.y };
-      // Target Mars at its arrival position: ~0.71 Earth years after departure
-      const mArrival = keplerPos(M, t + 0.58 + 0.71);
+      // Arc draws over ARC_DRAW/0.003 = 400 frames; t advances 0.0008/frame
+      // => Mars travels 400*0.0008 = 0.32 animation-years during arc drawing
+      const mArrival = keplerPos(M, t + 0.58 + 0.32);
       const mArrivalS = toScreen(mArrival.x, mArrival.y);
       arcMars = { x: mArrivalS.x, y: mArrivalS.y };
     }
