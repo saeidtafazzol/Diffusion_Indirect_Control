@@ -1,4 +1,4 @@
-<title>Diffusion Indirect Control</title>
+<title>A Diffusion-Based Multiple Shooting Indirect Method for Spacecraft Fuel-Optimal Trajectory Generation</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="A diffusion model generates costate initial guesses for indirect BVP solvers, achieving 100% convergence on Earth–Mars transfers where ε-continuation manages 18–62%.">
@@ -542,15 +542,13 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <a href="#abstract">Abstract</a>
     <a href="#method">Method</a>
     <a href="#results">Results</a>
-    <a href="#figures">Figures</a>
     <a href="#bibtex">Cite</a>
     <button id="theme-toggle" aria-label="Toggle theme">☀ Light</button>
   </nav>
   <canvas id="orbit-canvas" aria-hidden="true"></canvas>
   <div class="hero-text">
     <p class="hero-eyebrow">Earth–Mars Trajectory Optimization</p>
-    <h1 class="hero-title">Diffusion-Based Indirect Control</h1>
-    <p class="hero-sub">Costate initialization via denoising diffusion for indirect spacecraft trajectory optimization</p>
+    <h1 class="hero-title">A Diffusion-Based Multiple Shooting Indirect Method for Spacecraft Fuel-Optimal Trajectory Generation</h1>
     <div class="hero-links">
       <a class="btn btn-primary" href="https://github.com/saeidtafazzol/Diffusion_Indirect_Control">Code</a>
       <a class="btn" href="#">Paper</a>
@@ -572,6 +570,14 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   </div>
 </div>
 
+<!-- ── State–costate comparison figure ───────────────────────────────────── -->
+<div class="wrap" style="padding-top:2rem;padding-bottom:0.5rem;">
+  <div class="fig-full">
+    <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
+    <p class="fig-cap">State–costate comparison for the −300 d window. Dashed = diffusion, solid = IPOPT.</p>
+  </div>
+</div>
+
 <!-- ── Videos ────────────────────────────────────────────────────────────── -->
 <section id="videos" class="alt">
   <div class="wrap">
@@ -584,7 +590,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     </p>
     <div class="shift-tabs" id="shift-tabs"></div>
     <div class="video-player-wrap">
-      <video id="shift-video" controls autoplay muted loop playsinline></video>
+      <video id="shift-video" controls autoplay muted playsinline></video>
     </div>
     <p class="video-caption" id="shift-caption"></p>
   </div>
@@ -642,7 +648,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <div class="metrics-row">
       <div class="metric">
         <div class="metric-val">100<sup>%</sup></div>
-        <div class="metric-label">Ours — 13 of 17 windows</div>
+        <div class="metric-label">Ours — 12 of 17 windows</div>
       </div>
       <div class="metric">
         <div class="metric-val">250</div>
@@ -714,19 +720,6 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   </div>
 </section>
 
-<!-- ── Figures ────────────────────────────────────────────────────────────── -->
-<section id="figures">
-  <div class="wrap">
-    <p class="section-label">Figures</p>
-    <h2>Key results and visualizations</h2>
-
-    <div class="fig-full">
-      <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
-      <p class="fig-cap">State–costate comparison for the −300 d window. Dashed = diffusion, solid = IPOPT.</p>
-    </div>
-  </div>
-</section>
-
 <!-- ── BibTeX ─────────────────────────────────────────────────────────────── -->
 <section id="bibtex" class="dark">
   <div class="wrap">
@@ -768,8 +761,19 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   }
 
   let active = null;
+  let loopTimer = null;
+
+  videoEl.addEventListener('ended', function () {
+    clearTimeout(loopTimer);
+    loopTimer = setTimeout(function () {
+      videoEl.currentTime = 0;
+      videoEl.play().catch(() => {});
+    }, 4000);
+  });
+
   function select(s) {
     active = s;
+    clearTimeout(loopTimer);
     tabsEl.querySelectorAll('.shift-tab').forEach(el => {
       el.classList.toggle('active', parseInt(el.dataset.shift) === s);
     });
