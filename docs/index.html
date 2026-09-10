@@ -36,19 +36,7 @@
   --max: 860px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:        #07090f;
-    --bg-alt:    #0b1120;
-    --bg-dark:   #07090f;
-    --surface:   #0e1c35;
-    --text:      #c8d8f0;
-    --text-2:    #7a96be;
-    --accent:    #60a5fa;
-    --accent-hi: #93c5fd;
-    --border:    #1e3558;
-  }
-}
+/* dark only when user explicitly toggles — light is always the default */
 :root[data-theme="dark"] {
   --bg:        #07090f;
   --bg-alt:    #0b1120;
@@ -117,11 +105,12 @@ img { max-width: 100%; display: block; }
 }
 .hero-title {
   font-family: 'Syne', sans-serif;
-  font-size: clamp(1.9rem, 5vw, var(--fs-4xl));
-  font-weight: 800;
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
+  font-weight: 700;
   color: #e8f0ff;
-  line-height: 1.1;
+  line-height: 1.12;
   text-wrap: balance;
+  letter-spacing: -0.01em;
   margin-bottom: 0.75rem;
   text-shadow: 0 2px 24px rgba(0,0,30,0.7);
 }
@@ -323,22 +312,23 @@ p:last-child { margin-bottom: 0; }
   padding: 1.2rem 1.1rem;
 }
 .metric-val {
-  font-family: 'Syne', sans-serif;
-  font-size: var(--fs-3xl);
-  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.4rem;
+  font-weight: 500;
   color: var(--accent);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
-.metric-val sup { font-size: 0.45em; vertical-align: super; }
+.metric-val sup { font-size: 0.5em; vertical-align: super; letter-spacing: 0; }
 .metric-label {
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-2);
-  margin-top: 0.3rem;
+  margin-top: 0.4rem;
 }
 
 /* ── Results table ───────────────────────────────────────────────────────── */
@@ -518,6 +508,22 @@ nav a {
 }
 nav a:hover { color: #e0edff; text-decoration: none; }
 
+#theme-toggle {
+  pointer-events: all;
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  background: rgba(14,28,53,0.5);
+  border: 1px solid rgba(96,165,250,0.3);
+  color: rgba(200,216,240,0.7);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+#theme-toggle:hover { color: #e0edff; border-color: rgba(96,165,250,0.7); }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
@@ -532,6 +538,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <a href="#figures">Figures</a>
     <a href="#videos">Videos</a>
     <a href="#bibtex">Cite</a>
+    <button id="theme-toggle" aria-label="Toggle theme">☀ Light</button>
   </nav>
   <canvas id="orbit-canvas" aria-hidden="true"></canvas>
   <div class="hero-text">
@@ -802,6 +809,20 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   });
 
   select(shifts[0]);
+})();
+</script>
+
+<!-- ── Theme toggle JS ────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  const btn = document.getElementById('theme-toggle');
+  const root = document.documentElement;
+  let dark = false;
+  btn.addEventListener('click', function () {
+    dark = !dark;
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    btn.textContent = dark ? '☀ Light' : '☾ Dark';
+  });
 })();
 </script>
 
