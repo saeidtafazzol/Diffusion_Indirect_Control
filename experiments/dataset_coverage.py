@@ -39,12 +39,7 @@ _SHIFTS_RAW = [
        0,   50,  100,  200,  300,  400,  500,  600,  700,
 ]
 
-def _syn(s):
-    """Display label: add 780 to negative shifts (synodic-period equivalent)."""
-    return s + 780 if s < 0 else s
-
-# Sort by synodic-equivalent so color gradient follows the relabeled order
-DEFAULT_SHIFTS = sorted(_SHIFTS_RAW, key=_syn)
+DEFAULT_SHIFTS = sorted(_SHIFTS_RAW)
 
 # ── Load dataset ──────────────────────────────────────────────────────────────
 chunks = sorted(DATASET_DIR.glob("chunk_*.npz"))
@@ -157,7 +152,7 @@ legend_handles = [
                markersize=10, linewidth=0, alpha=0.8, label="Dataset"),
 ] + [
     plt.Line2D([0], [0], marker=MARKERS[i % 4], color=colors[i], markersize=11,
-               linewidth=0, markeredgewidth=2.2, label=f"{_syn(s)}")
+               linewidth=0, markeredgewidth=2.2, label=f"{s}")
     for i, s in enumerate(DEFAULT_SHIFTS)
 ]
 

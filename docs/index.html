@@ -70,10 +70,11 @@ body {
   line-height: 1.75;
   color: var(--text);
   background: var(--bg);
+  font-stretch: normal;
 }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
-img { max-width: 100%; }
+img { max-width: 100%; display: block; }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .wrap {
@@ -109,7 +110,7 @@ img { max-width: 100%; }
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent-hi);
   margin-bottom: 0.9rem;
@@ -121,7 +122,6 @@ img { max-width: 100%; }
   color: #e8f0ff;
   line-height: 1.1;
   text-wrap: balance;
-  letter-spacing: -0.02em;
   margin-bottom: 0.75rem;
   text-shadow: 0 2px 24px rgba(0,0,30,0.7);
 }
@@ -169,18 +169,44 @@ img { max-width: 100%; }
 .authors-bar {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-d);
-  padding: 0.9rem 1.5rem;
+  padding: 1.4rem 1.5rem;
   text-align: center;
 }
-.authors-bar p {
+.authors-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 2.5rem;
+  margin-bottom: 0.75rem;
+}
+.author {
   font-family: 'Syne', sans-serif;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-inv);
+}
+.author sup {
+  font-size: 0.6em;
+  color: var(--accent-hi);
+  vertical-align: super;
+}
+.affil-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem 2rem;
+}
+.affil {
+  font-family: 'Source Serif 4', serif;
   font-size: var(--fs-sm);
   color: var(--text-inv2);
-  letter-spacing: 0.02em;
+  font-style: italic;
 }
-.authors-bar strong {
-  color: var(--text-inv);
-  font-weight: 600;
+.affil sup {
+  font-style: normal;
+  font-size: 0.7em;
+  color: var(--accent-hi);
+  vertical-align: super;
 }
 
 /* ── Sections ────────────────────────────────────────────────────────────── */
@@ -195,7 +221,7 @@ section.alt { background: var(--bg-alt); }
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--accent);
   margin-bottom: 0.6rem;
@@ -246,7 +272,7 @@ p:last-child { margin-bottom: 0; }
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   color: var(--accent-hi);
   margin-bottom: 0.4rem;
 }
@@ -264,17 +290,6 @@ p:last-child { margin-bottom: 0; }
   max-width: none;
 }
 .step-body strong { color: var(--text-inv); font-weight: 600; }
-
-.arrow-connector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent-hi);
-  font-size: 1.5rem;
-  align-self: center;
-  opacity: 0.6;
-}
-@media (max-width: 640px) { .arrow-connector { transform: rotate(90deg); } }
 
 .eps-stages {
   display: flex;
@@ -320,7 +335,7 @@ p:last-child { margin-bottom: 0; }
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-2);
   margin-top: 0.3rem;
@@ -339,7 +354,7 @@ thead th {
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-2);
   padding: 0.55rem 0.9rem;
@@ -361,8 +376,88 @@ tbody td:first-child { text-align: left; font-weight: 500; }
 .warn  { color: #b45309; }
 .zero  { color: var(--text-2); }
 .dash  { color: var(--text-2); letter-spacing: 0; }
-
 .table-divider td { border-left: 2px solid var(--border); }
+
+/* ── Figures ─────────────────────────────────────────────────────────────── */
+.fig-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+@media (max-width: 600px) { .fig-grid { grid-template-columns: 1fr; } }
+.fig-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface);
+}
+.fig-card img { width: 100%; height: auto; }
+.fig-cap {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  padding: 0.6rem 0.85rem;
+  letter-spacing: 0.03em;
+  border-top: 1px solid var(--border);
+}
+.fig-full {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface);
+  margin-top: 1.5rem;
+}
+.fig-full img { width: 100%; height: auto; }
+.fig-full .fig-cap { border-top: 1px solid var(--border); }
+
+/* ── Videos ──────────────────────────────────────────────────────────────── */
+.shift-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+.shift-tab {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-xs);
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.shift-tab:hover { border-color: var(--accent); color: var(--accent); }
+.shift-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.video-player-wrap {
+  background: #000;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  aspect-ratio: 2 / 1;
+  max-width: 100%;
+}
+.video-player-wrap video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.video-caption {
+  font-family: 'Syne', sans-serif;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  margin-top: 0.6rem;
+}
 
 /* ── BibTeX ──────────────────────────────────────────────────────────────── */
 .bibtex-block {
@@ -394,7 +489,7 @@ footer p {
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   color: var(--text-inv2);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   max-width: none;
   margin: 0;
 }
@@ -415,7 +510,7 @@ nav a {
   font-family: 'Syne', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(200,216,240,0.6);
   text-decoration: none;
@@ -431,8 +526,11 @@ nav a:hover { color: #e0edff; text-decoration: none; }
 <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
 <section class="hero">
   <nav>
+    <a href="#abstract">Abstract</a>
     <a href="#method">Method</a>
     <a href="#results">Results</a>
+    <a href="#figures">Figures</a>
+    <a href="#videos">Videos</a>
     <a href="#bibtex">Cite</a>
   </nav>
   <canvas id="orbit-canvas" aria-hidden="true"></canvas>
@@ -448,8 +546,17 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   </div>
 </section>
 
+<!-- ── Authors bar ────────────────────────────────────────────────────────── -->
 <div class="authors-bar">
-  <p><strong>Saeed Tafazzol</strong> &nbsp;·&nbsp; Aerospace Engineering</p>
+  <div class="authors-row">
+    <span class="author">Saeid Tafazzol<sup>1</sup></span>
+    <span class="author">Ehsan Taheri<sup>1</sup></span>
+    <span class="author">Ryne Beeson<sup>2</sup></span>
+  </div>
+  <div class="affil-row">
+    <span class="affil"><sup>1</sup>Department of Aerospace Engineering, Auburn University</span>
+    <span class="affil"><sup>2</sup>Department of Mechanical and Aerospace Engineering, Princeton University</span>
+  </div>
 </div>
 
 <!-- ── Abstract ──────────────────────────────────────────────────────────── -->
@@ -473,7 +580,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
         <p class="step-num">Stage 01</p>
         <p class="step-title">Diffusion Denoising</p>
         <p class="step-body">
-          A transformer-based diffusion model, trained on <strong>8,000 optimal trajectories</strong>, denoises a random noise trajectory conditioned on the departure and arrival boundary states. The 30-step reverse process produces a physically plausible state–costate trajectory
+          A transformer-based diffusion model, trained on <strong>49,000+ optimal trajectories</strong>, denoises a random noise trajectory conditioned on the departure and arrival boundary states. The 30-step reverse process produces a physically plausible state–costate trajectory
           <strong>(r, v, m, λ<sub>r</sub>, λ<sub>v</sub>, λ<sub>m</sub>)</strong>
           at 32 collocation nodes.
         </p>
@@ -539,36 +646,36 @@ nav a:hover { color: #e0edff; text-decoration: none; }
         </thead>
         <tbody>
           <tr>
-            <td>+0</td>   <td class="good">100.0%</td><td class="warn">62.0%</td><td>603.7</td>
+            <td>+0</td>   <td class="good">100.0%</td><td class="warn">62.0%</td><td>603.9</td>
             <td class="table-divider">+400</td><td class="zero">0.4%</td><td class="zero">6.0%</td><td>285.0</td>
           </tr>
           <tr>
-            <td>+50</td>  <td class="good">100.0%</td><td class="warn">56.8%</td><td>659.3</td>
-            <td class="table-divider">+480</td><td class="good">100.0%</td><td class="warn">18.4%</td><td>354.1</td>
+            <td>+50</td>  <td class="good">100.0%</td><td class="warn">56.8%</td><td>659.6</td>
+            <td class="table-divider">−300</td><td class="good">100.0%</td><td class="warn">18.4%</td><td>354.3</td>
           </tr>
           <tr>
-            <td>+80</td>  <td class="good">100.0%</td><td class="warn">57.6%</td><td>729.6</td>
-            <td class="table-divider">+500</td><td class="good">100.0%</td><td class="warn">16.8%</td><td>393.3</td>
+            <td>−700</td> <td class="good">100.0%</td><td class="warn">57.6%</td><td>730.0</td>
+            <td class="table-divider">+500</td><td class="good">100.0%</td><td class="warn">16.8%</td><td>393.5</td>
           </tr>
           <tr>
-            <td>+100</td> <td class="good">100.0%</td><td class="warn">52.4%</td><td>722.5</td>
-            <td class="table-divider">+580</td><td class="good">100.0%</td><td class="warn">31.2%</td><td>476.6</td>
+            <td>+100</td> <td class="good">100.0%</td><td class="warn">52.4%</td><td>722.7</td>
+            <td class="table-divider">−200</td><td class="good">100.0%</td><td class="warn">31.2%</td><td>476.9</td>
           </tr>
           <tr>
-            <td>+180</td> <td class="good">100.0%</td><td class="warn">48.8%</td><td>489.1</td>
-            <td class="table-divider">+600</td><td class="good">100.0%</td><td class="warn">32.4%</td><td>449.8</td>
+            <td>−600</td> <td class="good">100.0%</td><td class="warn">48.8%</td><td>489.2</td>
+            <td class="table-divider">+600</td><td class="good">100.0%</td><td class="warn">32.4%</td><td>450.1</td>
           </tr>
           <tr>
             <td>+200</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
-            <td class="table-divider">+680</td><td class="good">100.0%</td><td class="warn">54.4%</td><td>544.2</td>
+            <td class="table-divider">−100</td><td class="good">100.0%</td><td class="warn">54.4%</td><td>544.4</td>
           </tr>
           <tr>
             <td>+280</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
-            <td class="table-divider">+700</td><td class="good">100.0%</td><td class="warn">52.8%</td><td>486.2</td>
+            <td class="table-divider">+700</td><td class="good">100.0%</td><td class="warn">52.8%</td><td>486.4</td>
           </tr>
           <tr>
             <td>+300</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
-            <td class="table-divider">+730</td><td class="good">100.0%</td><td class="warn">59.2%</td><td>568.6</td>
+            <td class="table-divider">−50</td> <td class="good">100.0%</td><td class="warn">59.2%</td><td>568.9</td>
           </tr>
           <tr>
             <td>+380</td> <td class="zero">0.0%</td>  <td class="zero">0.0%</td> <td class="dash">—</td>
@@ -578,8 +685,58 @@ nav a:hover { color: #e0edff; text-decoration: none; }
       </table>
     </div>
     <p style="font-size:var(--fs-xs); color:var(--text-2); margin-top:0.75rem; font-family:'Syne',sans-serif; letter-spacing:0.03em;">
-      Shifts +200 to +380 represent a difficult conjunction zone where both methods fail consistently. <em>m<sub>f</sub></em> shown only for converged cases; both methods reach identical optima (Δm &lt; 0.1 kg) when both converge.
+      Shifts +200 to +380 represent a difficult conjunction zone where both methods fail consistently.
+      <em>m<sub>f</sub></em> shown only for converged cases (re-solved with ε = 10<sup>−7</sup>).
     </p>
+  </div>
+</section>
+
+<!-- ── Figures ────────────────────────────────────────────────────────────── -->
+<section id="figures">
+  <div class="wrap">
+    <p class="section-label">Figures</p>
+    <h2>Key results and visualizations</h2>
+
+    <div class="fig-grid">
+      <div class="fig-card">
+        <img src="media/figures/stacked_orbits.png" alt="Stacked orbit trajectories for three departure windows">
+        <p class="fig-cap">Stacked 3D trajectories for −300 d, +100 d, and +500 d shifts. Dashed = diffusion output, solid = IPOPT-refined.</p>
+      </div>
+      <div class="fig-card">
+        <img src="media/figures/runtime_boxplots.png" alt="Runtime comparison box plots">
+        <p class="fig-cap">Wall-clock time per converged trial. Ours (mean 18.5 s) vs. ε-continuation baseline (mean 68.4 s).</p>
+      </div>
+    </div>
+
+    <div class="fig-full">
+      <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
+      <p class="fig-cap">Full comparison for the −300 d window: position, velocity, costates, switching function S(t), and bang-bang thrust δ(t). Dashed = diffusion, solid = IPOPT.</p>
+    </div>
+
+    <div class="fig-full" style="margin-top:1.5rem;">
+      <img src="media/figures/classical_mds_coverage.png" alt="MDS coverage of dataset vs shift boundary conditions">
+      <p class="fig-cap">Classical MDS projection of the 13D boundary-condition space. Gray dots = 49 k training trajectories; colored markers = 17 shift experiment boundary conditions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Videos ────────────────────────────────────────────────────────────── -->
+<section id="videos" class="alt">
+  <div class="wrap">
+    <p class="section-label">Trajectory Videos</p>
+    <h2>Diffusion → IPOPT refinement, per shift</h2>
+    <p style="color:var(--text-2); margin-bottom:1.5rem;">
+      Each video animates the full pipeline: 30 diffusion denoising steps (<span style="color:#27ae60; font-weight:600;">green</span>) followed by
+      IPOPT collocation iterations (<span style="color:#e67e22; font-weight:600;">orange</span>), ending on the converged optimal trajectory.
+      Select a departure shift below.
+    </p>
+
+    <div class="shift-tabs" id="shift-tabs"></div>
+
+    <div class="video-player-wrap">
+      <video id="shift-video" controls autoplay muted loop playsinline></video>
+    </div>
+    <p class="video-caption" id="shift-caption"></p>
   </div>
 </section>
 
@@ -589,11 +746,12 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <p class="section-label">Citation</p>
     <h2>BibTeX</h2>
     <div class="bibtex-block">
-      <pre><span class="bib-key">@article</span>{tafazzol2025dbic,
-  <span class="bib-field">title</span>   = {<span class="bib-val">Diffusion-Based Costate Initialization for Indirect
-            Spacecraft Trajectory Optimization</span>},
-  <span class="bib-field">author</span>  = {<span class="bib-val">Tafazzol, Saeed</span>},
-  <span class="bib-field">journal</span> = {<span class="bib-val">arXiv preprint</span>},
+      <pre><span class="bib-key">@inproceedings</span>{tafazzol2025dbic,
+  <span class="bib-field">title</span>   = {<span class="bib-val">Bridging Exploration and Optimality: A Diffusion-Based
+            Indirect Method for Spacecraft Fuel-Optimal Trajectory
+            Generation</span>},
+  <span class="bib-field">author</span>  = {<span class="bib-val">Tafazzol, Saeid and Taheri, Ehsan and Beeson, Ryne</span>},
+  <span class="bib-field">booktitle</span> = {<span class="bib-val">IEEE Conference on Decision and Control</span>},
   <span class="bib-field">year</span>    = {<span class="bib-val">2025</span>},
 }</pre>
     </div>
@@ -605,6 +763,48 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   <p>Code available on <a href="https://github.com/saeidtafazzol/Diffusion_Indirect_Control" style="color:var(--accent-hi)">GitHub</a></p>
 </footer>
 
+<!-- ── Video section JS ───────────────────────────────────────────────────── -->
+<script>
+(function () {
+  const shifts = [-700, -600, -300, -200, -100, -50, 0, 50, 100, 500, 600, 700];
+  const tabsEl   = document.getElementById('shift-tabs');
+  const videoEl  = document.getElementById('shift-video');
+  const capEl    = document.getElementById('shift-caption');
+
+  function fmtShift(s) {
+    return (s >= 0 ? '+' : '') + s + ' d';
+  }
+  function videoFile(s) {
+    const sign = s >= 0 ? '+' : '-';
+    const abs  = Math.abs(s);
+    return `media/videos/shift_${sign}${abs}d.mp4`;
+  }
+
+  let active = null;
+  function select(s) {
+    active = s;
+    tabsEl.querySelectorAll('.shift-tab').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.shift) === s);
+    });
+    videoEl.src = videoFile(s);
+    videoEl.load();
+    videoEl.play().catch(() => {});
+    capEl.textContent = `Shift ${fmtShift(s)} — green: diffusion (30 steps) · orange: IPOPT refinement`;
+  }
+
+  shifts.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'shift-tab';
+    btn.dataset.shift = s;
+    btn.textContent = fmtShift(s);
+    btn.addEventListener('click', () => select(s));
+    tabsEl.appendChild(btn);
+  });
+
+  select(shifts[0]);
+})();
+</script>
+
 <!-- ── Orbital canvas ─────────────────────────────────────────────────────── -->
 <script>
 (function () {
@@ -613,16 +813,13 @@ nav a:hover { color: #e0edff; text-decoration: none; }
 
   let W, H, cx, cy, scale;
   let t = 0;
-  let raf;
 
-  // Keplerian params (normalised: Earth a=1, T_E=1)
-  const E = { a: 1.000, e: 0.017, T: 1.000, color: '#4a9eff', r: 5, label: 'Earth' };
-  const M = { a: 1.524, e: 0.093, T: 1.881, color: '#f87171', r: 4, label: 'Mars' };
+  const E = { a: 1.000, e: 0.017, T: 1.000, color: '#4a9eff', r: 5 };
+  const M = { a: 1.524, e: 0.093, T: 1.881, color: '#f87171', r: 4 };
 
-  // arc state
-  let arcPhase = 0; // 0=hidden, 0→1=drawing, >1=fading
+  let arcPhase = 0;
   let arcEarth = null, arcMars = null;
-  const ARC_DRAW = 1.2, ARC_HOLD = 0.6, ARC_FADE = 0.4, ARC_CYCLE = 3.5;
+  const ARC_DRAW = 1.2, ARC_HOLD = 0.6, ARC_FADE = 0.4;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -636,10 +833,9 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   }
 
   function keplerPos(body, time) {
-    const M_anom = (2 * Math.PI * time / body.T) % (2 * Math.PI);
-    // Solve Kepler's equation E - e*sin(E) = M via Newton
-    let E = M_anom;
-    for (let i = 0; i < 5; i++) E -= (E - body.e * Math.sin(E) - M_anom) / (1 - body.e * Math.cos(E));
+    const Ma = (2 * Math.PI * time / body.T) % (2 * Math.PI);
+    let E = Ma;
+    for (let i = 0; i < 5; i++) E -= (E - body.e * Math.sin(E) - Ma) / (1 - body.e * Math.cos(E));
     const nu = 2 * Math.atan2(Math.sqrt(1 + body.e) * Math.sin(E / 2), Math.sqrt(1 - body.e) * Math.cos(E / 2));
     const r  = body.a * (1 - body.e * Math.cos(E));
     return { x: r * Math.cos(nu), y: r * Math.sin(nu) };
@@ -649,7 +845,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     return { x: cx + px * scale, y: cy - py * scale };
   }
 
-  function drawOrbit(body, alpha) {
+  function drawOrbit(body) {
     ctx.beginPath();
     for (let i = 0; i <= 200; i++) {
       const p = keplerPos(body, body.T * i / 200);
@@ -657,32 +853,30 @@ nav a:hover { color: #e0edff; text-decoration: none; }
       i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y);
     }
     ctx.closePath();
-    ctx.strokeStyle = `rgba(255,255,255,${0.10 * alpha})`;
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 6]);
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  function drawBody(body, time, alpha) {
+  function drawBody(body, time) {
     const p = keplerPos(body, time);
     const s = toScreen(p.x, p.y);
-    // glow
     const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, body.r * 3);
     g.addColorStop(0, body.color);
     g.addColorStop(1, 'transparent');
     ctx.beginPath();
     ctx.arc(s.x, s.y, body.r * 3, 0, Math.PI * 2);
     ctx.fillStyle = g;
-    ctx.globalAlpha = 0.4 * alpha;
+    ctx.globalAlpha = 0.4;
     ctx.fill();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = 1;
     ctx.beginPath();
     ctx.arc(s.x, s.y, body.r, 0, Math.PI * 2);
     ctx.fillStyle = body.color;
     ctx.fill();
-    ctx.globalAlpha = 1;
-    return { x: s.x, y: s.y, world: p };
+    return { x: s.x, y: s.y };
   }
 
   function drawSun() {
@@ -701,15 +895,12 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   }
 
   function drawArc(p1, p2, progress, alpha) {
-    // Cubic bezier: control points curve outward
     const mx = (p1.x + p2.x) / 2 + (p2.y - p1.y) * 0.18;
     const my = (p1.y + p2.y) / 2 - (p2.x - p1.x) * 0.18;
-    // Draw partial bezier by sampling
     ctx.beginPath();
     const steps = Math.floor(80 * progress);
     for (let i = 0; i <= steps; i++) {
-      const t2 = (i / 80);
-      const tt = 1 - t2;
+      const t2 = i / 80, tt = 1 - t2;
       const x = tt*tt*p1.x + 2*tt*t2*mx + t2*t2*p2.x;
       const y = tt*tt*p1.y + 2*tt*t2*my + t2*t2*p2.y;
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
@@ -725,59 +916,39 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   function frame() {
     ctx.clearRect(0, 0, W, H);
 
-    // Stars
     if (!frame._stars) {
       frame._stars = Array.from({ length: 120 }, () => ({
         x: Math.random(), y: Math.random(), s: Math.random() * 1.3 + 0.3,
         a: Math.random() * 0.6 + 0.2
       }));
     }
+    const dpr = window.devicePixelRatio || 1;
     frame._stars.forEach(s => {
       ctx.beginPath();
-      ctx.arc(s.x * (W / (window.devicePixelRatio||1)), s.y * (H / (window.devicePixelRatio||1)), s.s, 0, Math.PI*2);
+      ctx.arc(s.x * W / dpr, s.y * H / dpr, s.s, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(200,220,255,${s.a})`;
       ctx.fill();
     });
 
-    drawOrbit(E, 1);
-    drawOrbit(M, 1);
-    drawSun();
+    drawOrbit(E); drawOrbit(M); drawSun();
 
-    const dt = 0.0008;
-    t += dt;
-    arcPhase += dt / (ARC_CYCLE * 0.0008 / 2 * 0.0008);
-    // Simpler: advance arcPhase by a fixed fraction per frame
+    t += 0.0008;
     arcPhase += 0.003;
-    if (arcPhase > ARC_DRAW + ARC_HOLD + ARC_FADE) {
-      arcPhase = 0;
-      arcEarth = null;
-    }
+    if (arcPhase > ARC_DRAW + ARC_HOLD + ARC_FADE) { arcPhase = 0; arcEarth = null; }
 
-    const ePos = drawBody(E, t, 1);
-    // Mars is 0.476 Earth-years (transfer ~349d = 0.956 yr) ahead in display time for arc
-    const mPos = drawBody(M, t + 0.58, 1);
+    const ePos = drawBody(E, t);
+    const mPos = drawBody(M, t + 0.58);
 
-    // Arc
-    if (arcPhase < 0.01) {
-      arcEarth = { x: ePos.x, y: ePos.y };
-      arcMars  = { x: mPos.x, y: mPos.y };
-    }
+    if (arcPhase < 0.01) { arcEarth = { x: ePos.x, y: ePos.y }; arcMars = { x: mPos.x, y: mPos.y }; }
     if (arcEarth) {
       let progress, alpha;
-      if (arcPhase < ARC_DRAW) {
-        progress = arcPhase / ARC_DRAW;
-        alpha = 1;
-      } else if (arcPhase < ARC_DRAW + ARC_HOLD) {
-        progress = 1;
-        alpha = 1;
-      } else {
-        progress = 1;
-        alpha = 1 - (arcPhase - ARC_DRAW - ARC_HOLD) / ARC_FADE;
-      }
+      if (arcPhase < ARC_DRAW)                          { progress = arcPhase / ARC_DRAW; alpha = 1; }
+      else if (arcPhase < ARC_DRAW + ARC_HOLD)          { progress = 1; alpha = 1; }
+      else { progress = 1; alpha = 1 - (arcPhase - ARC_DRAW - ARC_HOLD) / ARC_FADE; }
       if (alpha > 0) drawArc(arcEarth, arcMars, progress, Math.max(0, alpha));
     }
 
-    raf = requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
   }
 
   const ro = new ResizeObserver(() => { resize(); });

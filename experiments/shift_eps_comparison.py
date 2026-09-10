@@ -227,7 +227,7 @@ def _worker_save_frame(z, t_day, ri, rf, diags, res_arr, title, color, out_path)
     fig.suptitle(title, fontsize=8, fontweight="bold", y=0.999)
 
     # ── 3D trajectory ─────────────────────────────────────────────────────────
-    ax3d.set_xlim(-2.0, 2.0); ax3d.set_ylim(-2.0, 2.0); ax3d.set_zlim(-0.15, 0.15)
+    ax3d.set_xlim(-2.0, 2.0); ax3d.set_ylim(-2.0, 2.0); ax3d.set_zlim(-2.0, 2.0)
     ax3d.scatter(0, 0, 0,  color="gold",       s=120, marker="*", zorder=5, label="Sun")
     ax3d.scatter(*ri,       color="dodgerblue", s=60,              zorder=5, label="Earth")
     ax3d.scatter(*rf,       color="tomato",     s=60,              zorder=5, label="Mars")
@@ -269,6 +269,7 @@ def _worker_save_frame(z, t_day, ri, rf, diags, res_arr, title, color, out_path)
     ax_mt.tick_params(labelsize=5, axis="y", labelcolor="tab:green")
     ax_mt.grid(True, alpha=0.25)
     ax_t2.set_ylabel("thrust δ", fontsize=6, color="tab:red")
+    ax_t2.yaxis.set_label_position("right")
     ax_t2.set_ylim(-0.05, 1.3); ax_t2.tick_params(labelsize=5, axis="y", labelcolor="tab:red")
     ax_mt.plot(t_day, diags["mass"],  color="tab:green", lw=1.3)
     ax_t2.plot(t_day, diags["delta"], color="tab:red",   lw=1.3)
@@ -783,7 +784,7 @@ def parse_args():
                    help="Disable all PNG/JSON output; write detail.txt per shift only")
     p.add_argument("--no-frames",           action="store_true",
                    help="Skip frame PNGs but still save trial_data.json")
-    p.add_argument("--casadi-max-iter",     type=int,   default=160,
+    p.add_argument("--casadi-max-iter",     type=int,   default=500,
                help="IPOPT max iters for Method A")
     p.add_argument("--casadi-max-iter-b",   type=int,   default=240,
                    help="IPOPT max iters per stage for Method B (5 stages)")
@@ -891,6 +892,15 @@ def main():
                 t_a  = time.perf_counter() - t_a
                 ok_a = res_a < args.res_tol
 
+                # Always collect IPOPT iterates for JSON (needed for video generation)
+                a_ipopt = (
+                    [np.asarray(z_diff, np.float64).reshape(n_points, AUGMENTED_DIM)]
+                    + [it.reshape(n_points, AUGMENTED_DIM) for it in iter_cb_A.iterates]
+                    + [z_opt_a]
+                )
+                if len(a_ipopt) >= 2 and np.allclose(a_ipopt[-1], a_ipopt[-2], atol=1e-12):
+                    a_ipopt = a_ipopt[:-1]
+
                 if save_frames:
                     diff_dir = trial_dir / "A" / "diffusion"
                     n_df = len(diff_frames)
@@ -903,13 +913,6 @@ def main():
                             color=_DIFF_COLOR,
                         )
                     ipopt_dir = trial_dir / "A" / "ipopt"
-                    a_ipopt = (
-                        [np.asarray(z_diff, np.float64).reshape(n_points, AUGMENTED_DIM)]
-                        + [it.reshape(n_points, AUGMENTED_DIM) for it in iter_cb_A.iterates]
-                        + [z_opt_a]
-                    )
-                    if len(a_ipopt) >= 2 and np.allclose(a_ipopt[-1], a_ipopt[-2], atol=1e-12):
-                        a_ipopt = a_ipopt[:-1]
                     n_ai = len(a_ipopt)
                     for fi, z_af in enumerate(a_ipopt):
                         enqueue_frame(
@@ -919,8 +922,6 @@ def main():
                             ipopt_dir / f"iter_{fi:03d}.png",
                             color=_IPOPT_COLOR,
                         )
-                else:
-                    a_ipopt = []
             else:
                 diff_frames = []
                 z_opt_a = np.zeros((n_points, AUGMENTED_DIM), np.float64)
