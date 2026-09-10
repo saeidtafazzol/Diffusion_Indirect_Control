@@ -37,10 +37,15 @@
 }
 
 /* dark only when user explicitly toggles — light is always the default */
+:root {
+  --bg-navy:   #142244;   /* dark-section bg in light mode: deep navy */
+  --text-navy: #c8d8f0;
+}
 :root[data-theme="dark"] {
   --bg:        #07090f;
   --bg-alt:    #0b1120;
   --bg-dark:   #07090f;
+  --bg-navy:   #07090f;
   --surface:   #0e1c35;
   --text:      #c8d8f0;
   --text-2:    #7a96be;
@@ -156,7 +161,7 @@ img { max-width: 100%; display: block; }
 
 /* ── Authors ─────────────────────────────────────────────────────────────── */
 .authors-bar {
-  background: var(--bg-card);
+  background: var(--bg-navy);
   border-bottom: 1px solid var(--border-d);
   padding: 1.4rem 1.5rem;
   text-align: center;
@@ -201,8 +206,8 @@ img { max-width: 100%; display: block; }
 /* ── Sections ────────────────────────────────────────────────────────────── */
 section { padding: 4.5rem 0; }
 section.dark {
-  background: var(--bg-dark);
-  color: var(--text-inv);
+  background: var(--bg-navy);
+  color: var(--text-navy);
 }
 section.alt { background: var(--bg-alt); }
 
@@ -363,6 +368,7 @@ tbody td {
 tbody td:first-child { text-align: left; font-weight: 500; }
 
 .good  { color: #16a34a; font-weight: 600; }
+.bad   { color: #dc2626; font-weight: 600; }
 .warn  { color: #b45309; }
 .zero  { color: var(--text-2); }
 .dash  { color: var(--text-2); letter-spacing: 0; }
@@ -532,11 +538,11 @@ nav a:hover { color: #e0edff; text-decoration: none; }
 <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
 <section class="hero">
   <nav>
+    <a href="#videos">Videos</a>
     <a href="#abstract">Abstract</a>
     <a href="#method">Method</a>
     <a href="#results">Results</a>
     <a href="#figures">Figures</a>
-    <a href="#videos">Videos</a>
     <a href="#bibtex">Cite</a>
     <button id="theme-toggle" aria-label="Toggle theme">☀ Light</button>
   </nav>
@@ -565,6 +571,24 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <span class="affil"><sup>2</sup>Department of Mechanical and Aerospace Engineering, Princeton University</span>
   </div>
 </div>
+
+<!-- ── Videos ────────────────────────────────────────────────────────────── -->
+<section id="videos" class="alt">
+  <div class="wrap">
+    <p class="section-label">Trajectory Videos</p>
+    <h2>Diffusion → IPOPT refinement, per shift</h2>
+    <p style="color:var(--text-2); margin-bottom:1.5rem;">
+      Each video animates the full pipeline: 30 diffusion denoising steps (<span style="color:#27ae60; font-weight:600;">green</span>) followed by
+      IPOPT collocation iterations (<span style="color:#e67e22; font-weight:600;">orange</span>), ending on the converged optimal trajectory.
+      Select a departure shift below.
+    </p>
+    <div class="shift-tabs" id="shift-tabs"></div>
+    <div class="video-player-wrap">
+      <video id="shift-video" controls autoplay muted loop playsinline></video>
+    </div>
+    <p class="video-caption" id="shift-caption"></p>
+  </div>
+</section>
 
 <!-- ── Abstract ──────────────────────────────────────────────────────────── -->
 <section id="abstract">
@@ -654,7 +678,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
         <tbody>
           <tr>
             <td>+0</td>   <td class="good">100.0%</td><td class="warn">62.0%</td><td>603.9</td>
-            <td class="table-divider">+400</td><td class="zero">0.4%</td><td class="zero">6.0%</td><td>285.0</td>
+            <td class="table-divider">+400</td><td class="bad">0.4%</td><td class="good">6.0%</td><td>285.0</td>
           </tr>
           <tr>
             <td>+50</td>  <td class="good">100.0%</td><td class="warn">56.8%</td><td>659.6</td>
@@ -704,46 +728,15 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <p class="section-label">Figures</p>
     <h2>Key results and visualizations</h2>
 
-    <div class="fig-grid">
-      <div class="fig-card">
-        <img src="media/figures/stacked_orbits.png" alt="Stacked orbit trajectories for three departure windows">
-        <p class="fig-cap">Stacked 3D trajectories for −300 d, +100 d, and +500 d shifts. Dashed = diffusion output, solid = IPOPT-refined.</p>
-      </div>
-      <div class="fig-card">
-        <img src="media/figures/runtime_boxplots.png" alt="Runtime comparison box plots">
-        <p class="fig-cap">Wall-clock time per converged trial. Ours (mean 18.5 s) vs. ε-continuation baseline (mean 68.4 s).</p>
-      </div>
-    </div>
-
     <div class="fig-full">
-      <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
-      <p class="fig-cap">Full comparison for the −300 d window: position, velocity, costates, switching function S(t), and bang-bang thrust δ(t). Dashed = diffusion, solid = IPOPT.</p>
+      <img src="media/figures/stacked_orbits.png" alt="Stacked orbit trajectories for three departure windows">
+      <p class="fig-cap">Stacked 3D trajectories for −300 d, +100 d, and +500 d shifts. Dashed = diffusion output, solid = IPOPT-refined.</p>
     </div>
 
     <div class="fig-full" style="margin-top:1.5rem;">
-      <img src="media/figures/classical_mds_coverage.png" alt="MDS coverage of dataset vs shift boundary conditions">
-      <p class="fig-cap">Classical MDS projection of the 13D boundary-condition space. Gray dots = 49 k training trajectories; colored markers = 17 shift experiment boundary conditions.</p>
+      <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
+      <p class="fig-cap">Full state–costate comparison for the −300 d window: position, velocity, costates, switching function S(t), and bang-bang thrust δ(t). Dashed = diffusion, solid = IPOPT.</p>
     </div>
-  </div>
-</section>
-
-<!-- ── Videos ────────────────────────────────────────────────────────────── -->
-<section id="videos" class="alt">
-  <div class="wrap">
-    <p class="section-label">Trajectory Videos</p>
-    <h2>Diffusion → IPOPT refinement, per shift</h2>
-    <p style="color:var(--text-2); margin-bottom:1.5rem;">
-      Each video animates the full pipeline: 30 diffusion denoising steps (<span style="color:#27ae60; font-weight:600;">green</span>) followed by
-      IPOPT collocation iterations (<span style="color:#e67e22; font-weight:600;">orange</span>), ending on the converged optimal trajectory.
-      Select a departure shift below.
-    </p>
-
-    <div class="shift-tabs" id="shift-tabs"></div>
-
-    <div class="video-player-wrap">
-      <video id="shift-video" controls autoplay muted loop playsinline></video>
-    </div>
-    <p class="video-caption" id="shift-caption"></p>
   </div>
 </section>
 
@@ -960,7 +953,13 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     const ePos = drawBody(E, t);
     const mPos = drawBody(M, t + 0.58);
 
-    if (arcPhase < 0.01) { arcEarth = { x: ePos.x, y: ePos.y }; arcMars = { x: mPos.x, y: mPos.y }; }
+    if (arcPhase < 0.01) {
+      arcEarth = { x: ePos.x, y: ePos.y };
+      // Target Mars at its arrival position: ~0.71 Earth years after departure
+      const mArrival = keplerPos(M, t + 0.58 + 0.71);
+      const mArrivalS = toScreen(mArrival.x, mArrival.y);
+      arcMars = { x: mArrivalS.x, y: mArrivalS.y };
+    }
     if (arcEarth) {
       let progress, alpha;
       if (arcPhase < ARC_DRAW)                          { progress = arcPhase / ARC_DRAW; alpha = 1; }
