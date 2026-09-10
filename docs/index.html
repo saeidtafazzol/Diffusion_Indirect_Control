@@ -596,7 +596,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     <p class="section-label">Abstract</p>
     <h2>The initialization problem in indirect optimal control</h2>
     <p class="abstract-text">
-      Indirect methods for spacecraft trajectory optimization offer superior solution accuracy and mass optimality, but require a precise initial guess for the costate variables — a notoriously difficult problem that causes standard solvers to fail on challenging transfer windows. We train a <strong>denoising diffusion model</strong> on a dataset of optimal Earth–Mars trajectories, then use it to generate costate initializations for a boundary-value problem (BVP) solver. Across 17 time shifts spanning one synodic period (~780 days) and 250 trials each, our method achieves <strong>100% convergence</strong> on 13 of 17 windows, compared to 18–62% for the ε-continuation baseline — while producing identical final masses on all cases where both methods converge.
+      Diffusion-based generative models (DMs) have found applications in control problems, and in particular robotics, where the DMs enable exploration of possible control solutions. A critical shortcoming of these applications is that they have lacked optimality guarantees. This is a problem for their potential use to fuel-optimal spacecraft trajectories that are characterized with long time-horizons and bang-bang profiles. Alternatively, indirect optimal control methods ensure explicit satisfaction of necessary conditions, but are highly sensitive to the initial costate estimation needed to solve the resulting Hamiltonian boundary-value problems (HBVPs). To alleviate this sensitivity and enlarge the convergence domain of HBVPs, advanced indirect methods have been developed that use smoothing approaches and continuation. We propose a <strong>diffusion-based multiple shooting indirect control method</strong> that combines the exploration capability of DMs with indirect method to generate fuel-optimal spacecraft trajectories. We benchmark our method against an advanced indirect method on a fuel-optimal <strong>Earth–Mars low-thrust transfer problem</strong>, showing higher convergence robustness than the advanced indirect method that is based on random costate initialization.
     </p>
   </div>
 </section>
@@ -620,22 +620,15 @@ nav a:hover { color: #e0edff; text-decoration: none; }
         <p class="step-num">Stage 02</p>
         <p class="step-title">BVP Refinement</p>
         <p class="step-body">
-          The diffusion output initializes an <strong>IPOPT-based collocation solver</strong> (160 iterations, 8-point RK4 continuity) that enforces the Pontryagin optimality conditions exactly. Convergence is declared at continuity residual &lt; 10<sup>−8</sup>; clean cases reach 10<sup>−15</sup>.
+          The diffusion output initializes an <strong>IPOPT-based collocation solver</strong> that enforces the Pontryagin optimality conditions exactly.
         </p>
       </div>
     </div>
 
     <div style="margin-top:2rem;">
-      <p class="step-body" style="color:var(--text-inv2); margin-bottom:0.6rem;">
-        Compared against: ε-continuation baseline starting from a Keplerian-propagated guess, through five regularization stages:
+      <p class="step-body" style="color:var(--text-inv2);">
+        Compared against an advanced indirect method (ε-continuation baseline) starting from a Keplerian-propagated guess with random costate initialization.
       </p>
-      <div class="eps-stages">
-        <span class="eps-pill">ε = 1</span>
-        <span class="eps-pill">ε = 0.1</span>
-        <span class="eps-pill">ε = 0.01</span>
-        <span class="eps-pill">ε = 0.001</span>
-        <span class="eps-pill">ε = 0.0001</span>
-      </div>
     </div>
   </div>
 </section>
@@ -717,7 +710,6 @@ nav a:hover { color: #e0edff; text-decoration: none; }
     </div>
     <p style="font-size:var(--fs-xs); color:var(--text-2); margin-top:0.75rem; font-family:'Syne',sans-serif; letter-spacing:0.03em;">
       Shifts −500, −400, +200, +300 represent a conjunction zone where both methods fail consistently.
-      <em>m<sub>f</sub></em> shown only for converged cases (re-solved with ε = 10<sup>−7</sup>).
     </p>
   </div>
 </section>
@@ -730,7 +722,7 @@ nav a:hover { color: #e0edff; text-decoration: none; }
 
     <div class="fig-full">
       <img src="media/figures/comparison_-300d.png" alt="Full state-costate comparison for −300 d shift">
-      <p class="fig-cap">Full state–costate comparison for the −300 d window: position, velocity, costates, switching function S(t), and bang-bang thrust δ(t). Dashed = diffusion, solid = IPOPT.</p>
+      <p class="fig-cap">State–costate comparison for the −300 d window. Dashed = diffusion, solid = IPOPT.</p>
     </div>
   </div>
 </section>
