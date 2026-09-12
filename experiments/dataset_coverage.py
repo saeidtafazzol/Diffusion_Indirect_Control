@@ -19,6 +19,8 @@ from pathlib import Path
 from scipy.integrate import solve_ivp
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from sklearn.manifold import MDS, TSNE
