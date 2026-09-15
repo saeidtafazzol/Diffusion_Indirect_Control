@@ -157,8 +157,13 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
 
     # ── figure layout ─────────────────────────────────────────────────────────
     fig = plt.figure(figsize=(18, 9))
-    gs  = gridspec.GridSpec(3, 4, figure=fig, wspace=0.44, hspace=0.60)
+    gs  = gridspec.GridSpec(3, 4, figure=fig, wspace=0.44, hspace=0.60,
+                            width_ratios=[2, 1, 1, 1],
+                            left=0.01, right=0.97, top=0.96, bottom=0.06)
     ax3d = fig.add_subplot(gs[0:2, 0], projection="3d")
+    # Expand the 3D axes to fill more of its cell (matplotlib 3D adds large internal padding)
+    _p = ax3d.get_position()
+    ax3d.set_position([_p.x0 - 0.03, _p.y0 - 0.02, _p.width + 0.07, _p.height + 0.04])
     ax_r  = fig.add_subplot(gs[0, 1])
     ax_v  = fig.add_subplot(gs[0, 2])
     ax_mt = fig.add_subplot(gs[0, 3])
@@ -185,45 +190,45 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
         ax3d.quiver(r3[on, 0], r3[on, 1], r3[on, 2],
                     alpha[on, 0], alpha[on, 1], alpha[on, 2],
                     length=0.05, normalize=True, color="tab:red", alpha=0.5)
-    ax3d.set_xlabel("x [AU]", fontsize=6); ax3d.set_ylabel("y [AU]", fontsize=6)
-    ax3d.set_zlabel("z [AU]", fontsize=6); ax3d.tick_params(labelsize=5)
-    ax3d.legend(fontsize=6, loc="upper left")
+    ax3d.set_xlabel("x [AU]", fontsize=11); ax3d.set_ylabel("y [AU]", fontsize=11)
+    ax3d.set_zlabel("z [AU]", fontsize=11); ax3d.tick_params(labelsize=9)
+    ax3d.legend(fontsize=12, loc="upper left")
 
     xl = (float(t_day[0]), float(t_day[-1]))
 
     def _setup(ax, ttl, yl, ylim=None):
-        ax.set_title(ttl, fontsize=8)
-        ax.set_xlabel("time (days)", fontsize=6)
-        ax.set_ylabel(yl, fontsize=6)
+        ax.set_title(ttl, fontsize=10)
+        ax.set_xlabel("time (days)", fontsize=8)
+        ax.set_ylabel(yl, fontsize=8)
         ax.set_xlim(*xl)
         if ylim is not None:
             ax.set_ylim(*ylim)
-        ax.tick_params(labelsize=5)
+        ax.tick_params(labelsize=7)
         ax.grid(True, alpha=0.25)
 
     # ── position ──────────────────────────────────────────────────────────────
     _setup(ax_r, "Position r(t)", "AU", glims.get("r"))
     for k, (c, lb) in enumerate(zip(_XYZ_COLORS, _XYZ_LABELS)):
         ax_r.plot(t_day, z[:, k], color=c, lw=1.3, label=lb)
-    ax_r.legend(fontsize=6)
+    ax_r.legend(fontsize=8)
 
     # ── velocity ──────────────────────────────────────────────────────────────
     _setup(ax_v, "Velocity v(t)", "AU/TU", glims.get("v"))
     for k, (c, lb) in enumerate(zip(_XYZ_COLORS, _XYZ_LABELS)):
         ax_v.plot(t_day, z[:, 3+k], color=c, lw=1.3, label=lb)
-    ax_v.legend(fontsize=6)
+    ax_v.legend(fontsize=8)
 
     # ── mass + thrust (bang-bang) ──────────────────────────────────────────────
-    ax_mt.set_title("Mass & Thrust δ", fontsize=8)
-    ax_mt.set_xlabel("time (days)", fontsize=6)
-    ax_mt.set_ylabel("mass (norm)", fontsize=6, color="tab:green")
+    ax_mt.set_title("Mass & Thrust δ", fontsize=10)
+    ax_mt.set_xlabel("time (days)", fontsize=8)
+    ax_mt.set_ylabel("mass (norm)", fontsize=8, color="tab:green")
     ax_mt.set_ylim(0.0, 1.05); ax_mt.set_xlim(*xl)
-    ax_mt.tick_params(labelsize=5, axis="y", labelcolor="tab:green")
+    ax_mt.tick_params(labelsize=7, axis="y", labelcolor="tab:green")
     ax_mt.grid(True, alpha=0.25)
-    ax_t2.set_ylabel("thrust δ", fontsize=6, color="tab:red")
+    ax_t2.set_ylabel("thrust δ", fontsize=8, color="tab:red")
     ax_t2.yaxis.set_label_position("right")
     ax_t2.set_ylim(-0.05, 1.15)
-    ax_t2.tick_params(labelsize=5, axis="y", labelcolor="tab:red")
+    ax_t2.tick_params(labelsize=7, axis="y", labelcolor="tab:red")
     ax_mt.plot(t_day, mass_bb, color="tab:green", lw=1.3)
     ax_t2.step(t_day, delta_bb, color="tab:red",   lw=1.5, where="mid")
 
@@ -231,13 +236,13 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
     _setup(ax_lr, "Costate λ_r(t)", "", glims.get("lam_r"))
     for k, (c, lb) in enumerate(zip(_XYZ_COLORS, _XYZ_LABELS)):
         ax_lr.plot(t_day, z[:, 7+k], color=c, lw=1.3, label=f"λ_r{lb}")
-    ax_lr.legend(fontsize=6)
+    ax_lr.legend(fontsize=8)
 
     # ── costate λ_v ───────────────────────────────────────────────────────────
     _setup(ax_lv, "Costate λ_v(t)", "", glims.get("lam_v"))
     for k, (c, lb) in enumerate(zip(_XYZ_COLORS, _XYZ_LABELS)):
         ax_lv.plot(t_day, z[:, 10+k], color=c, lw=1.3, label=f"λ_v{lb}")
-    ax_lv.legend(fontsize=6)
+    ax_lv.legend(fontsize=8)
 
     # ── costate λ_m ───────────────────────────────────────────────────────────
     ax_lm.axhline(0.0, color="gray", lw=0.8, ls="--")
@@ -246,23 +251,19 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
     lm_f = float(z[-1, 13])
     ax_lm.scatter(t_day[-1], lm_f, color="tab:purple", s=35, zorder=5,
                   label=f"λ_m(tf)={lm_f:.4f}")
-    ax_lm.legend(fontsize=6)
+    ax_lm.legend(fontsize=8)
 
     # ── continuity residuals ───────────────────────────────────────────────────
-    ax_rs.set_xlabel("interval k", fontsize=7)
-    ax_rs.set_ylabel("‖F(Z_k)−Z_{k+1}‖", fontsize=7)
-    ax_rs.tick_params(labelsize=6)
+    ax_rs.set_xlabel("interval k", fontsize=8)
+    ax_rs.set_ylabel("‖F(Z_k)−Z_{k+1}‖", fontsize=8)
+    ax_rs.tick_params(labelsize=7)
     bars = np.maximum(res_arr, 1e-16)
     ax_rs.bar(np.arange(len(bars)), bars, color=color, alpha=0.75, width=0.8)
     ax_rs.set_yscale("log")
     ax_rs.set_ylim(glims.get("res", (1e-16, 1e1)))
     label = f"{true_res:.2e}" if true_res is not None else f"{res_arr.max():.2e}"
-    ax_rs.set_title(f"Continuity residuals  (max={label})", fontsize=8)
+    ax_rs.set_title(f"Continuity residuals  (max={label})", fontsize=10)
 
-    try:
-        fig.tight_layout(rect=[0, 0, 1, 0.97])
-    except Exception:
-        pass
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(str(out_path), dpi=80)
