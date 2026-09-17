@@ -2,7 +2,7 @@
 
 Usage:
     python experiments/make_shift_videos.py --study-dir shift_eps_study \
-        --out-dir shift_videos --res-tol 1e-8 --fps 20
+        --out-dir shift_videos --res-tol 1e-8 --fps 10
 
 Frame layout (18×9 figure):
   [3D orbit | r(t) | v(t) | mass+thrust ]
