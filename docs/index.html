@@ -769,19 +769,16 @@ nav a:hover { color: #e0edff; text-decoration: none; }
   }
 
   let active = null;
-  let loopTimer = null;
 
+  // The 4s hold-on-last-frame is already baked into each video file
+  // (ffmpeg tpad tail), so just restart immediately once it actually ends.
   videoEl.addEventListener('ended', function () {
-    clearTimeout(loopTimer);
-    loopTimer = setTimeout(function () {
-      videoEl.currentTime = 0;
-      videoEl.play().catch(() => {});
-    }, 4000);
+    videoEl.currentTime = 0;
+    videoEl.play().catch(() => {});
   });
 
   function select(s) {
     active = s;
-    clearTimeout(loopTimer);
     tabsEl.querySelectorAll('.shift-tab').forEach(el => {
       el.classList.toggle('active', parseInt(el.dataset.shift) === s);
     });
