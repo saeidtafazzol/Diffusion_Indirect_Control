@@ -145,7 +145,7 @@ def _compute_global_limits(jsons, res_tol):
 
 # ── Single frame renderer ─────────────────────────────────────────────────────
 def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
-                  true_res=None):
+                  true_res=None, is_diffusion=False):
     """Write one PNG frame."""
     z   = np.asarray(z, dtype=np.float64)
     N   = len(z)
@@ -153,6 +153,11 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
 
     # ── diagnostics ───────────────────────────────────────────────────────────
     S, delta_bb, mass_bb = _switching(z, norm)
+    # During diffusion the model is jointly estimating mass itself, so the raw
+    # (still-noisy) m(t) should be shown rather than the bang-bang mass
+    # reconstruction — that reconstruction is only meaningful once the
+    # trajectory is IPOPT-refined and the thrust is genuinely bang-bang.
+    mass_line = z[:, 6] if is_diffusion else mass_bb
     res_arr = _continuity_residuals(z, norm)
 
     # ── figure layout ─────────────────────────────────────────────────────────
@@ -229,7 +234,7 @@ def _render_frame(z, t_day, ri, rf, norm, title, color, out_path, glims,
     ax_t2.yaxis.set_label_position("right")
     ax_t2.set_ylim(-0.05, 1.15)
     ax_t2.tick_params(labelsize=7, axis="y", labelcolor="tab:red")
-    ax_mt.plot(t_day, mass_bb, color="tab:green", lw=1.3)
+    ax_mt.plot(t_day, mass_line, color="tab:green", lw=1.3)
     ax_t2.step(t_day, delta_bb, color="tab:red",   lw=1.5, where="mid")
 
     # ── costate λ_r ───────────────────────────────────────────────────────────
@@ -375,7 +380,8 @@ def main():
                     out_f = tmp / f"frame_{fi:04d}.png"
                     futs.append(pool.submit(
                         _render_frame,
-                        zf, t_day, ri, rf, norm, title, color, out_f, glims, tr
+                        zf, t_day, ri, rf, norm, title, color, out_f, glims, tr,
+                        fi < n_diff,
                     ))
 
                 for fut in futs:
